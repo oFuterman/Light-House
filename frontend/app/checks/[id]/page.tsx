@@ -26,9 +26,11 @@ export default function CheckDetailPage() {
         api.getCheckResults(id),
       ]);
       setCheck(checkData);
-      setResults(resultsData);
+      setResults(Array.isArray(resultsData) ? resultsData : []);
     } catch (err) {
       console.error("Failed to load check:", err);
+      setCheck(null);
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -120,7 +122,7 @@ export default function CheckDetailPage() {
                     <StatusBadge status={result.status_code} />
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {result.response_time_ms}ms
+                    {result.response_time_ms ?? '-'}ms
                   </td>
                   <td className="px-4 py-3 text-sm text-red-600">
                     {result.error_message || "-"}

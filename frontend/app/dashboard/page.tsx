@@ -17,9 +17,10 @@ export default function DashboardPage() {
   const loadChecks = async () => {
     try {
       const data = await api.getChecks();
-      setChecks(data);
+      setChecks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load checks:", err);
+      setChecks([]);
     } finally {
       setLoading(false);
     }
