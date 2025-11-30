@@ -6,7 +6,7 @@ import { AuthProvider } from "@/contexts/auth";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Basic Beacon",
+  title: "Light House",
   description: "Lightweight uptime monitoring tool",
 };
 

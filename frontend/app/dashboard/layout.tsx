@@ -24,7 +24,7 @@ export default function DashboardLayout({
           <div className="flex justify-between h-14">
             <div className="flex items-center gap-8">
               <Link href="/dashboard" className="font-semibold">
-                Basic Beacon
+                Light House
               </Link>
               <div className="flex gap-4">
                 {navItems.map((item) => (
