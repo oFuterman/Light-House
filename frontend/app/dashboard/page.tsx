@@ -70,6 +70,9 @@ export default function DashboardPage() {
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                   Last Check
                 </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                  Next Check
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -93,6 +96,14 @@ export default function DashboardPage() {
                     {check.last_checked_at
                       ? new Date(check.last_checked_at).toLocaleString()
                       : "Never"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {check.last_checked_at
+                      ? new Date(
+                          new Date(check.last_checked_at).getTime() +
+                            check.interval_seconds * 1000
+                        ).toLocaleString()
+                      : "Soon"}
                   </td>
                 </tr>
               ))}
