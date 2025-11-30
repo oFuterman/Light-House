@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, Check, CheckResult } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function CheckDetailPage() {
   const params = useParams();
@@ -42,7 +43,8 @@ export default function CheckDetailPage() {
   }
 
   return (
-    <div>
+    <AuthGuard>
+      <div>
       <div className="mb-6">
         <Link
           href="/dashboard"
@@ -129,6 +131,7 @@ export default function CheckDetailPage() {
           </table>
         </div>
       )}
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

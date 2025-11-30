@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, LogEvent } from "@/lib/api";
+import { AuthGuard } from "@/components/auth-guard";
 
 const levelColors: Record<string, string> = {
   error: "bg-red-100 text-red-700",
@@ -32,7 +33,8 @@ export default function LogsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <AuthGuard>
+        <div className="min-h-screen">
         <nav className="border-b border-gray-200 bg-white">
           <div className="max-w-6xl mx-auto px-4">
             <div className="flex h-14 items-center gap-8">
@@ -53,12 +55,14 @@ export default function LogsPage() {
         <main className="max-w-6xl mx-auto px-4 py-8">
           <div className="text-gray-600">Loading...</div>
         </main>
-      </div>
+        </div>
+      </AuthGuard>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <AuthGuard>
+      <div className="min-h-screen">
       <nav className="border-b border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex h-14 items-center gap-8">
@@ -118,6 +122,7 @@ export default function LogsPage() {
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

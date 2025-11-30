@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function NewCheckPage() {
   const router = useRouter();
@@ -29,7 +30,8 @@ export default function NewCheckPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto">
+    <AuthGuard>
+      <div className="max-w-lg mx-auto">
       <div className="mb-6">
         <Link
           href="/dashboard"
@@ -104,6 +106,7 @@ export default function NewCheckPage() {
           {loading ? "Creating..." : "Create Check"}
         </button>
       </form>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, Check } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function DashboardPage() {
   const [checks, setChecks] = useState<Check[]>([]);
@@ -29,7 +30,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
+    <AuthGuard>
+      <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Uptime Checks</h1>
         <Link
@@ -97,6 +99,7 @@ export default function DashboardPage() {
           </table>
         </div>
       )}
-    </div>
+      </div>
+    </AuthGuard>
   );
 }
