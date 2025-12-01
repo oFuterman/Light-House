@@ -5,21 +5,27 @@ import { useEffect, useState } from "react";
 import { api, Check } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { AuthGuard } from "@/components/auth-guard";
+import { Loading } from "@/components/ui/Loading";
+import { ErrorState } from "@/components/ui/ErrorState";
 
 export default function DashboardPage() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadChecks();
   }, []);
 
   const loadChecks = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await api.getChecks();
       setChecks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load checks:", err);
+      setError("Unable to load your checks. Please check your connection and try again.");
       setChecks([]);
     } finally {
       setLoading(false);
@@ -27,7 +33,23 @@ export default function DashboardPage() {
   };
 
   if (loading) {
-    return <div className="text-gray-600">Loading...</div>;
+    return (
+      <AuthGuard>
+        <Loading message="Loading checks..." />
+      </AuthGuard>
+    );
+  }
+
+  if (error) {
+    return (
+      <AuthGuard>
+        <ErrorState
+          title="Failed to load checks"
+          message={error}
+          onRetry={loadChecks}
+        />
+      </AuthGuard>
+    );
   }
 
   return (

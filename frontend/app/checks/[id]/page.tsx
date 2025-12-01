@@ -6,6 +6,8 @@ import Link from "next/link";
 import { api, Check, CheckResult } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { AuthGuard } from "@/components/auth-guard";
+import { Loading } from "@/components/ui/Loading";
+import { ErrorState } from "@/components/ui/ErrorState";
 
 export default function CheckDetailPage() {
   const params = useParams();
@@ -14,12 +16,15 @@ export default function CheckDetailPage() {
   const [check, setCheck] = useState<Check | null>(null);
   const [results, setResults] = useState<CheckResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
   }, [id]);
 
   const loadData = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const [checkData, resultsData] = await Promise.all([
         api.getCheck(id),
@@ -29,6 +34,7 @@ export default function CheckDetailPage() {
       setResults(Array.isArray(resultsData) ? resultsData : []);
     } catch (err) {
       console.error("Failed to load check:", err);
+      setError("Unable to load check details. The check may not exist or there was a connection issue.");
       setCheck(null);
       setResults([]);
     } finally {
@@ -37,11 +43,31 @@ export default function CheckDetailPage() {
   };
 
   if (loading) {
-    return <div className="text-gray-600">Loading...</div>;
+    return (
+      <AuthGuard>
+        <Loading message="Loading check details..." />
+      </AuthGuard>
+    );
   }
 
-  if (!check) {
-    return <div className="text-gray-600">Check not found</div>;
+  if (error || !check) {
+    return (
+      <AuthGuard>
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="text-sm text-gray-600 hover:text-gray-900"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
+        <ErrorState
+          title="Check not found"
+          message={error || "This check doesn't exist or you don't have access to it."}
+          onRetry={loadData}
+        />
+      </AuthGuard>
+    );
   }
 
   return (
