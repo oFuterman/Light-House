@@ -2,9 +2,9 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/omerfuterman/basic-beacon/internal/config"
-	"github.com/omerfuterman/basic-beacon/internal/handlers"
-	"github.com/omerfuterman/basic-beacon/internal/middleware"
+	"github.com/oFuterman/light-house/internal/config"
+	"github.com/oFuterman/light-house/internal/handlers"
+	"github.com/oFuterman/light-house/internal/middleware"
 	"gorm.io/gorm"
 )
 

@@ -1,4 +1,4 @@
-module github.com/omerfuterman/basic-beacon
+module github.com/oFuterman/light-house
 
 go 1.22
 

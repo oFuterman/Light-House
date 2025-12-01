@@ -12,7 +12,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/basic_beacon?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/light_house?sslmode=disable"),
 		JWTSecret:   getEnv("JWT_SECRET", "change-me-in-production"),
 		CORSOrigins: getEnv("CORS_ORIGINS", "*"),
 		SendGridKey: getEnv("SENDGRID_API_KEY", ""),

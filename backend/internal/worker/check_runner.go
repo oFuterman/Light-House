@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/omerfuterman/basic-beacon/internal/models"
+	"github.com/oFuterman/light-house/internal/models"
 	"gorm.io/gorm"
 )
 

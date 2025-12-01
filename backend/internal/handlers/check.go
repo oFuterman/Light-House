@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/omerfuterman/basic-beacon/internal/models"
+	"github.com/oFuterman/light-house/internal/models"
 	"gorm.io/gorm"
 )
 

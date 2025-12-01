@@ -1,8 +1,8 @@
 package database
 
 import (
-	"github.com/omerfuterman/basic-beacon/internal/config"
-	"github.com/omerfuterman/basic-beacon/internal/models"
+	"github.com/oFuterman/light-house/internal/config"
+	"github.com/oFuterman/light-house/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

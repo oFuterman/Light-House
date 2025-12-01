@@ -10,10 +10,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
 
-	"github.com/omerfuterman/basic-beacon/internal/config"
-	"github.com/omerfuterman/basic-beacon/internal/database"
-	"github.com/omerfuterman/basic-beacon/internal/router"
-	"github.com/omerfuterman/basic-beacon/internal/worker"
+	"github.com/oFuterman/light-house/internal/config"
+	"github.com/oFuterman/light-house/internal/database"
+	"github.com/oFuterman/light-house/internal/router"
+	"github.com/oFuterman/light-house/internal/worker"
 )
 
 func main() {
