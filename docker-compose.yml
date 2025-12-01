@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/basic_beacon?sslmode=disable
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/light_house?sslmode=disable
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
@@ -40,7 +40,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=basic_beacon
+      - POSTGRES_DB=light_house
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
