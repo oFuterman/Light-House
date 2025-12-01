@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth";
+import { Loading } from "@/components/ui/Loading";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { user, signup } = useAuth();
+  const { user, isAuthLoading, signup } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgName, setOrgName] = useState("");
@@ -16,10 +17,24 @@ export default function SignupPage() {
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
-    if (user) {
+    if (!isAuthLoading && user) {
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [isAuthLoading, user, router]);
+
+  // Show loading while checking auth status
+  if (isAuthLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <Loading message="Checking session..." />
+      </main>
+    );
+  }
+
+  // Don't show signup form if user is logged in (redirecting)
+  if (user) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

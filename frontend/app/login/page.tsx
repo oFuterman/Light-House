@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth";
+import { Loading } from "@/components/ui/Loading";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, login } = useAuth();
+  const { user, isAuthLoading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,10 +16,24 @@ export default function LoginPage() {
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
-    if (user) {
+    if (!isAuthLoading && user) {
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [isAuthLoading, user, router]);
+
+  // Show loading while checking auth status
+  if (isAuthLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <Loading message="Checking session..." />
+      </main>
+    );
+  }
+
+  // Don't show login form if user is logged in (redirecting)
+  if (user) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -92,6 +92,8 @@ export const api = {
       body: JSON.stringify({ email, password, org_name }),
     }),
 
+  getMe: () => request<User>("/me"),
+
   // Checks
   getChecks: () => request<Check[]>("/checks"),
 

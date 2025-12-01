@@ -12,7 +12,7 @@ import { api, User } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isAuthLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, orgName: string) => Promise<void>;
   logout: () => void;
@@ -22,30 +22,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Check for existing session
-    const token = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-    setLoading(false);
+    verifyAuth();
   }, []);
+
+  const verifyAuth = async () => {
+    const token = localStorage.getItem("token");
+
+    // No token present - user is not logged in
+    if (!token) {
+      setUser(null);
+      setIsAuthLoading(false);
+      return;
+    }
+
+    // Token exists - verify it with the backend
+    try {
+      const userData = await api.getMe();
+      setUser(userData);
+      // Update stored user data in case it changed
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch (err) {
+      // Token is invalid or expired - clear auth state
+      console.error("Auth verification failed:", err);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
     setUser(response.user);
+    setIsAuthLoading(false);
   };
 
   const signup = async (email: string, password: string, orgName: string) => {
@@ -53,17 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
     setUser(response.user);
+    setIsAuthLoading(false);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    setIsAuthLoading(false);
     router.push("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isAuthLoading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
