@@ -32,3 +32,6 @@ Thumbs.db
 
 # Private docs
 docs/roadmap.md
+
+# Local dev scripts
+local/
