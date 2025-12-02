@@ -28,6 +28,28 @@ export interface CheckResult {
   error_message: string | null;
 }
 
+export interface CheckResultsResponse {
+  results: CheckResult[];
+}
+
+export interface CheckResultsParams {
+  windowHours?: number;
+  limit?: number;
+}
+
+export interface CheckSummary {
+  check_id: number;
+  window_hours: number;
+  total_runs: number;
+  successful_runs: number;
+  failed_runs: number;
+  uptime_percentage: number;
+  avg_response_ms: number;
+  p95_response_ms: number;
+  last_status: number | null;
+  last_checked_at: string | null;
+}
+
 export interface LogEvent {
   id: number;
   org_id: number;
@@ -116,8 +138,23 @@ export const api = {
       method: "DELETE",
     }),
 
-  getCheckResults: (id: string) =>
-    request<CheckResult[]>(`/checks/${id}/results`),
+  getCheckResults: (id: string, params?: CheckResultsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.windowHours) {
+      searchParams.set("window_hours", String(params.windowHours));
+    }
+    if (params?.limit) {
+      searchParams.set("limit", String(params.limit));
+    }
+    const query = searchParams.toString();
+    const url = `/checks/${id}/results${query ? `?${query}` : ""}`;
+    return request<CheckResultsResponse>(url).then((res) => res.results);
+  },
+
+  getCheckSummary: (id: string | number, windowHours: number = 24) => {
+    const url = `/checks/${id}/summary?window_hours=${windowHours}`;
+    return request<CheckSummary>(url);
+  },
 
   // Logs
   getLogs: () => request<LogEvent[]>("/logs"),

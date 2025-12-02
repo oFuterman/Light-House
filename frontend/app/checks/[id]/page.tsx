@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { AuthGuard } from "@/components/auth-guard";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { TimeRangeSelector } from "@/components/TimeRangeSelector";
+import { CheckResponseTimeChart } from "@/components/CheckResponseTimeChart";
 
 export default function CheckDetailPage() {
   const params = useParams();
@@ -17,10 +19,19 @@ export default function CheckDetailPage() {
   const [results, setResults] = useState<CheckResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [windowHours, setWindowHours] = useState(24);
+  const [chartLoading, setChartLoading] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [id]);
+
+  // Refetch results when time range changes
+  useEffect(() => {
+    if (check) {
+      loadResults();
+    }
+  }, [windowHours]);
 
   const loadData = async () => {
     setLoading(true);
@@ -28,7 +39,7 @@ export default function CheckDetailPage() {
     try {
       const [checkData, resultsData] = await Promise.all([
         api.getCheck(id),
-        api.getCheckResults(id),
+        api.getCheckResults(id, { windowHours }),
       ]);
       setCheck(checkData);
       setResults(Array.isArray(resultsData) ? resultsData : []);
@@ -39,6 +50,18 @@ export default function CheckDetailPage() {
       setResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadResults = async () => {
+    setChartLoading(true);
+    try {
+      const resultsData = await api.getCheckResults(id, { windowHours });
+      setResults(Array.isArray(resultsData) ? resultsData : []);
+    } catch (err) {
+      console.error("Failed to load results:", err);
+    } finally {
+      setChartLoading(false);
     }
   };
 
@@ -110,6 +133,48 @@ export default function CheckDetailPage() {
               {check.is_active ? "Active" : "Paused"}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Response Time Chart */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Response Time</h2>
+          <TimeRangeSelector
+            value={windowHours}
+            onChange={setWindowHours}
+            disabled={chartLoading}
+          />
+        </div>
+        <div className="relative">
+          {chartLoading && (
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10 rounded">
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                <span>Loading...</span>
+              </div>
+            </div>
+          )}
+          <CheckResponseTimeChart results={results} />
         </div>
       </div>
 

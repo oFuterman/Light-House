@@ -6,9 +6,9 @@ import (
 
 type CheckResult struct {
 	ID        uint      `gorm:"primarykey" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"created_at" gorm:"index:idx_check_results_check_created,priority:2,sort:desc"`
 
-	CheckID        uint   `gorm:"not null;index" json:"check_id"`
+	CheckID        uint   `gorm:"not null;index:idx_check_results_check_created,priority:1" json:"check_id"`
 	StatusCode     int    `json:"status_code"`
 	ResponseTimeMs int64  `json:"response_time_ms"`
 	Success        bool   `json:"success"`

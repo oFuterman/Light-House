@@ -45,6 +45,7 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	checks.Put("/:id", handlers.UpdateCheck(db))
 	checks.Delete("/:id", handlers.DeleteCheck(db))
 	checks.Get("/:id/results", handlers.GetCheckResults(db))
+	checks.Get("/:id/summary", handlers.GetCheckSummary(db))
 
 	// API Key routes
 	apiKeys := protected.Group("/api-keys")

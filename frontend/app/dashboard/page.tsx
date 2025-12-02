@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, Check } from "@/lib/api";
-import { StatusBadge } from "@/components/status-badge";
 import { AuthGuard } from "@/components/auth-guard";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { CheckTableRow } from "@/components/CheckTableRow";
 
 export default function DashboardPage() {
   const [checks, setChecks] = useState<Check[]>([]);
@@ -117,6 +117,9 @@ export default function DashboardPage() {
                   Status
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                  Uptime (24h)
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                   Last Check
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
@@ -126,35 +129,7 @@ export default function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {checks.map((check) => (
-                <tr key={check.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/checks/${check.id}`}
-                      className="font-medium text-gray-900 hover:underline"
-                    >
-                      {check.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 truncate max-w-xs">
-                    {check.url}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={check.last_status} />
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {check.last_checked_at
-                      ? new Date(check.last_checked_at).toLocaleString()
-                      : "Never"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {check.last_checked_at
-                      ? new Date(
-                          new Date(check.last_checked_at).getTime() +
-                            check.interval_seconds * 1000
-                        ).toLocaleString()
-                      : "Soon"}
-                  </td>
-                </tr>
+                <CheckTableRow key={check.id} check={check} />
               ))}
             </tbody>
           </table>
