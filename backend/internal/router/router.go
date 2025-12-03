@@ -41,10 +41,12 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	checks := protected.Group("/checks")
 	checks.Get("/", handlers.ListChecks(db))
 	checks.Post("/", handlers.CreateCheck(db))
+	checks.Post("/search", handlers.SearchChecks(db))
 	checks.Get("/:id", handlers.GetCheck(db))
 	checks.Put("/:id", handlers.UpdateCheck(db))
 	checks.Delete("/:id", handlers.DeleteCheck(db))
 	checks.Get("/:id/results", handlers.GetCheckResults(db))
+	checks.Post("/:id/results/search", handlers.SearchCheckResults(db))
 	checks.Get("/:id/summary", handlers.GetCheckSummary(db))
 	checks.Get("/:id/alerts", handlers.GetCheckAlerts(db))
 
@@ -64,4 +66,8 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	// Log ingestion (API key auth)
 	v1.Post("/logs", middleware.APIKeyAuth(db), handlers.IngestLog(db))
 	v1.Get("/logs", middleware.AuthRequired(), handlers.ListLogs(db))
+
+	// Search endpoints
+	protected.Post("/logs/search", handlers.SearchLogs(db))
+	protected.Post("/traces/search", handlers.SearchTraces(db))
 }

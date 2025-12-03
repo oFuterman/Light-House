@@ -16,6 +16,10 @@ export interface Check {
   last_status: number | null;
   last_checked_at: string | null;
   is_active: boolean;
+  service_name?: string;
+  environment?: string;
+  region?: string;
+  tags?: Record<string, unknown>;
 }
 
 export interface CheckResult {
@@ -26,10 +30,25 @@ export interface CheckResult {
   response_time_ms: number;
   success: boolean;
   error_message: string | null;
+  org_id?: number;
+  service_name?: string;
+  environment?: string;
+  region?: string;
+  tags?: Record<string, unknown>;
+  trace_id?: string;
 }
 
 export interface CheckResultsResponse {
   results: CheckResult[];
+}
+
+// Simplified CheckResult for search responses
+export interface CheckResultSearchDTO {
+  id: number;
+  status_code: number;
+  response_time_ms: number;
+  error_message: string | null;
+  created_at: string;
 }
 
 export interface CheckResultsParams {
@@ -87,6 +106,74 @@ export interface AlertsResponse {
 export interface AlertsParams {
   windowHours?: number;
   limit?: number;
+}
+
+// Search DSL Types
+export interface TimeRange {
+  from?: string;
+  to?: string;
+}
+
+export interface FilterCondition {
+  field: string;
+  op: string;
+  value: unknown;
+}
+
+export interface TagFilter {
+  key: string;
+  op: string;
+  value: string;
+}
+
+export interface SortField {
+  field: string;
+  dir: "asc" | "desc";
+}
+
+export interface SearchRequest {
+  time_range?: TimeRange;
+  filters?: FilterCondition[];
+  tags?: TagFilter[];
+  sort?: SortField[];
+  limit?: number;
+  offset?: number;
+}
+
+export interface SearchResponse<T> {
+  data: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+// LogEntry type for structured logs
+export interface LogEntry {
+  id: number;
+  service_name: string;
+  environment: string;
+  region?: string;
+  level: string;
+  message: string;
+  timestamp: string;
+  trace_id?: string;
+  span_id?: string;
+  tags?: Record<string, unknown>;
+}
+
+// TraceSpan type for distributed tracing
+export interface TraceSpan {
+  id: number;
+  service_name: string;
+  environment?: string;
+  operation: string;
+  status: string;
+  duration_ms: number;
+  start_time: string;
+  trace_id: string;
+  span_id: string;
+  parent_span_id?: string;
+  tags?: Record<string, unknown>;
 }
 
 // Helper to get auth token
@@ -201,4 +288,29 @@ export const api = {
     const query = searchParams.toString();
     return request<AlertsResponse>(`/checks/${checkId}/alerts${query ? `?${query}` : ""}`).then((res) => res.alerts);
   },
+
+  // Search endpoints
+  searchLogs: (searchRequest: SearchRequest) =>
+    request<SearchResponse<LogEntry>>("/logs/search", {
+      method: "POST",
+      body: JSON.stringify(searchRequest),
+    }),
+
+  searchTraces: (searchRequest: SearchRequest) =>
+    request<SearchResponse<TraceSpan>>("/traces/search", {
+      method: "POST",
+      body: JSON.stringify(searchRequest),
+    }),
+
+  searchChecks: (searchRequest: SearchRequest) =>
+    request<SearchResponse<Check>>("/checks/search", {
+      method: "POST",
+      body: JSON.stringify(searchRequest),
+    }),
+
+  searchCheckResults: (checkId: string | number, searchRequest: SearchRequest) =>
+    request<SearchResponse<CheckResultSearchDTO>>(`/checks/${checkId}/results/search`, {
+      method: "POST",
+      body: JSON.stringify(searchRequest),
+    }),
 };

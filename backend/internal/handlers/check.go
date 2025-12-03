@@ -8,20 +8,29 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/oFuterman/light-house/internal/models"
+	"github.com/oFuterman/light-house/internal/search"
 	"gorm.io/gorm"
 )
 
 type CreateCheckRequest struct {
-	Name            string `json:"name"`
-	URL             string `json:"url"`
-	IntervalSeconds int    `json:"interval_seconds"`
+	Name            string         `json:"name"`
+	URL             string         `json:"url"`
+	IntervalSeconds int            `json:"interval_seconds"`
+	ServiceName     string         `json:"service_name,omitempty"`
+	Environment     string         `json:"environment,omitempty"`
+	Region          string         `json:"region,omitempty"`
+	Tags            models.JSONMap `json:"tags,omitempty"`
 }
 
 type UpdateCheckRequest struct {
-	Name            *string `json:"name,omitempty"`
-	URL             *string `json:"url,omitempty"`
-	IntervalSeconds *int    `json:"interval_seconds,omitempty"`
-	IsActive        *bool   `json:"is_active,omitempty"`
+	Name            *string         `json:"name,omitempty"`
+	URL             *string         `json:"url,omitempty"`
+	IntervalSeconds *int            `json:"interval_seconds,omitempty"`
+	IsActive        *bool           `json:"is_active,omitempty"`
+	ServiceName     *string         `json:"service_name,omitempty"`
+	Environment     *string         `json:"environment,omitempty"`
+	Region          *string         `json:"region,omitempty"`
+	Tags            *models.JSONMap `json:"tags,omitempty"`
 }
 
 // ListChecks returns all checks for the current organization
@@ -87,6 +96,10 @@ func CreateCheck(db *gorm.DB) fiber.Handler {
 			URL:             req.URL,
 			IntervalSeconds: req.IntervalSeconds,
 			IsActive:        true,
+			ServiceName:     strings.TrimSpace(req.ServiceName),
+			Environment:     strings.TrimSpace(req.Environment),
+			Region:          strings.TrimSpace(req.Region),
+			Tags:            req.Tags,
 		}
 
 		if err := db.Create(&check).Error; err != nil {
@@ -189,6 +202,22 @@ func UpdateCheck(db *gorm.DB) fiber.Handler {
 
 		if req.IsActive != nil {
 			check.IsActive = *req.IsActive
+		}
+
+		if req.ServiceName != nil {
+			check.ServiceName = strings.TrimSpace(*req.ServiceName)
+		}
+
+		if req.Environment != nil {
+			check.Environment = strings.TrimSpace(*req.Environment)
+		}
+
+		if req.Region != nil {
+			check.Region = strings.TrimSpace(*req.Region)
+		}
+
+		if req.Tags != nil {
+			check.Tags = *req.Tags
 		}
 
 		if err := db.Save(&check).Error; err != nil {
@@ -385,4 +414,86 @@ func p95Index(length int) int {
         idx = length - 1
     }
     return idx
+}
+
+// CheckResultSearchDTO is the response DTO for check result search
+type CheckResultSearchDTO struct {
+    ID             uint      `json:"id"`
+    StatusCode     int       `json:"status_code"`
+    ResponseTimeMs int64     `json:"response_time_ms"`
+    ErrorMessage   string    `json:"error_message,omitempty"`
+    CreatedAt      time.Time `json:"created_at"`
+}
+
+// SearchCheckResults handles POST /api/v1/checks/:id/results/search
+func SearchCheckResults(db *gorm.DB) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        orgID := c.Locals("orgID").(uint)
+        checkID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+        if err != nil {
+            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+                "error": "invalid check ID",
+            })
+        }
+        // Verify the check belongs to this org
+        var check models.Check
+        if err := db.Where("id = ? AND org_id = ?", checkID, orgID).First(&check).Error; err != nil {
+            if err == gorm.ErrRecordNotFound {
+                return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+                    "error": "check not found",
+                })
+            }
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to fetch check",
+            })
+        }
+        // Parse search request
+        var req search.SearchRequest
+        if err := c.BodyParser(&req); err != nil {
+            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+                "error": "invalid request body",
+            })
+        }
+        // Validate search request
+        if err := search.ValidateCheckResultsSearch(&req); err != nil {
+            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+                "error": err.Error(),
+            })
+        }
+        // Build query with check_id constraint
+        // Use BuildWithCountNoOrg since we already verified check ownership above
+        builder := search.NewQueryBuilder(db.Model(&models.CheckResult{}).Where("check_id = ?", check.ID), "created_at")
+        query, countQuery := builder.BuildWithCountNoOrg(&req)
+        // Get total count
+        var total int64
+        if err := countQuery.Count(&total).Error; err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to count results",
+            })
+        }
+        // Fetch results
+        var results []models.CheckResult
+        if err := query.Limit(req.Limit).Offset(req.Offset).Find(&results).Error; err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to search results",
+            })
+        }
+        // Map to DTOs
+        dtos := make([]CheckResultSearchDTO, len(results))
+        for i, r := range results {
+            dtos[i] = CheckResultSearchDTO{
+                ID:             r.ID,
+                StatusCode:     r.StatusCode,
+                ResponseTimeMs: r.ResponseTimeMs,
+                ErrorMessage:   r.ErrorMessage,
+                CreatedAt:      r.CreatedAt,
+            }
+        }
+        return c.JSON(search.SearchResponse{
+            Data:   dtos,
+            Total:  total,
+            Limit:  req.Limit,
+            Offset: req.Offset,
+        })
+    }
 }

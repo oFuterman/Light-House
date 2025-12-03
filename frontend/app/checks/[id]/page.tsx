@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { CheckResponseTimeChart } from "@/components/CheckResponseTimeChart";
 import { AlertsTab } from "@/components/AlertsTab";
+import { CheckResultsTab } from "@/components/CheckResultsTab";
 
 type Tab = "results" | "alerts";
 
@@ -208,48 +209,7 @@ export default function CheckDetailPage() {
             </button>
           </nav>
         </div>
-        {activeTab === "results" && (
-          <>
-            {results.length === 0 ? (
-              <div className="p-6">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">No results yet</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      The worker will run this check soon. Results will appear here once the first check completes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Time</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Status</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Response Time</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Error</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {results.map((result) => (
-                    <tr key={result.id}>
-                      <td className="px-4 py-3 text-sm text-gray-600">{new Date(result.created_at).toLocaleString()}</td>
-                      <td className="px-4 py-3"><StatusBadge status={result.status_code} /></td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{result.response_time_ms ?? "-"}ms</td>
-                      <td className="px-4 py-3 text-sm text-red-600">{result.error_message || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
+        {activeTab === "results" && <CheckResultsTab checkId={id} />}
         {activeTab === "alerts" && <AlertsTab checkId={id} windowHours={windowHours} />}
       </div>
       </div>
