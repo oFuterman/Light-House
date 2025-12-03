@@ -10,6 +10,9 @@ import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
 import { CheckResponseTimeChart } from "@/components/CheckResponseTimeChart";
+import { AlertsTab } from "@/components/AlertsTab";
+
+type Tab = "results" | "alerts";
 
 export default function CheckDetailPage() {
   const params = useParams();
@@ -21,6 +24,7 @@ export default function CheckDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [windowHours, setWindowHours] = useState(24);
   const [chartLoading, setChartLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("results");
 
   useEffect(() => {
     loadData();
@@ -178,74 +182,76 @@ export default function CheckDetailPage() {
         </div>
       </div>
 
-      <h2 className="text-lg font-semibold mb-4">Recent Results</h2>
-
-      {results.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg
-                className="w-5 h-5 text-blue-500 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">No results yet</p>
-              <p className="text-sm text-gray-600 mt-1">
-                The worker will run this check soon. Results will appear here once the first check completes.
-              </p>
-            </div>
-          </div>
+      {/* Tabs */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveTab("results")}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
+                activeTab === "results"
+                  ? "border-gray-900 text-gray-900"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Results
+            </button>
+            <button
+              onClick={() => setActiveTab("alerts")}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition ${
+                activeTab === "alerts"
+                  ? "border-gray-900 text-gray-900"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Alerts
+            </button>
+          </nav>
         </div>
-      ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Time
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Status
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Response Time
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Error
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {results.map((result) => (
-                <tr key={result.id}>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(result.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={result.status_code} />
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {result.response_time_ms ?? '-'}ms
-                  </td>
-                  <td className="px-4 py-3 text-sm text-red-600">
-                    {result.error_message || "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {activeTab === "results" && (
+          <>
+            {results.length === 0 ? (
+              <div className="p-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">No results yet</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      The worker will run this check soon. Results will appear here once the first check completes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Time</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Status</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Response Time</th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Error</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {results.map((result) => (
+                    <tr key={result.id}>
+                      <td className="px-4 py-3 text-sm text-gray-600">{new Date(result.created_at).toLocaleString()}</td>
+                      <td className="px-4 py-3"><StatusBadge status={result.status_code} /></td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{result.response_time_ms ?? "-"}ms</td>
+                      <td className="px-4 py-3 text-sm text-red-600">{result.error_message || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+        {activeTab === "alerts" && <AlertsTab checkId={id} windowHours={windowHours} />}
+      </div>
       </div>
     </AuthGuard>
   );

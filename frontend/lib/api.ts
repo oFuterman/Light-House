@@ -64,6 +64,31 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface NotificationSettings {
+  id?: number;
+  email_recipients: string[];
+  webhook_url?: string | null;
+}
+
+export interface Alert {
+  id: number;
+  created_at: string;
+  check_id: number;
+  check_name?: string;
+  alert_type: "DOWN" | "RECOVERY";
+  status_code: number;
+  error_message?: string;
+}
+
+export interface AlertsResponse {
+  alerts: Alert[];
+}
+
+export interface AlertsParams {
+  windowHours?: number;
+  limit?: number;
+}
+
 // Helper to get auth token
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -158,4 +183,22 @@ export const api = {
 
   // Logs
   getLogs: () => request<LogEvent[]>("/logs"),
+
+  // Notification Settings
+  getNotificationSettings: () => request<NotificationSettings>("/notification-settings"),
+
+  updateNotificationSettings: (settings: { email_recipients: string[]; webhook_url?: string | null }) =>
+    request<NotificationSettings>("/notification-settings", {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
+
+  // Alerts
+  getCheckAlerts: (checkId: string | number, params?: AlertsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.windowHours) searchParams.set("window_hours", String(params.windowHours));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    const query = searchParams.toString();
+    return request<AlertsResponse>(`/checks/${checkId}/alerts${query ? `?${query}` : ""}`).then((res) => res.alerts);
+  },
 };

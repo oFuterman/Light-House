@@ -32,5 +32,7 @@ func Migrate(db *gorm.DB) error {
 		&models.CheckResult{},
 		&models.LogEvent{},
 		&models.APIKey{},
+		&models.Alert{},
+		&models.NotificationSettings{},
 	)
 }

@@ -46,6 +46,14 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	checks.Delete("/:id", handlers.DeleteCheck(db))
 	checks.Get("/:id/results", handlers.GetCheckResults(db))
 	checks.Get("/:id/summary", handlers.GetCheckSummary(db))
+	checks.Get("/:id/alerts", handlers.GetCheckAlerts(db))
+
+	// Alert routes (org-wide)
+	protected.Get("/alerts", handlers.GetOrgAlerts(db))
+
+	// Notification settings routes
+	protected.Get("/notification-settings", handlers.GetNotificationSettings(db))
+	protected.Put("/notification-settings", handlers.UpdateNotificationSettings(db))
 
 	// API Key routes
 	apiKeys := protected.Group("/api-keys")

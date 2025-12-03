@@ -11,10 +11,15 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      - SMTP_HOST=mailpit
+      - SMTP_PORT=1025
+      - SMTP_FROM=alerts@lighthouse.local
       - PORT=8080
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
@@ -48,6 +53,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI
+    environment:
+      - MP_SMTP_AUTH_ACCEPT_ANY=true
+      - MP_SMTP_AUTH_ALLOW_INSECURE=true
     restart: unless-stopped
 
 volumes:

@@ -57,12 +57,20 @@ export default function DashboardPage() {
       <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Uptime Checks</h1>
-        <Link
-          href="/checks/new"
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm"
-        >
-          New Check
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/settings"
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
+          >
+            Settings
+          </Link>
+          <Link
+            href="/checks/new"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm"
+          >
+            New Check
+          </Link>
+        </div>
       </div>
 
       {checks.length === 0 ? (

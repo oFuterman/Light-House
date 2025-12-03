@@ -18,6 +18,7 @@ type Check struct {
 	IntervalSeconds int        `gorm:"not null;default:60" json:"interval_seconds"`
 	LastStatus      *int       `json:"last_status"`
 	LastCheckedAt   *time.Time `json:"last_checked_at"`
+	LastAlertAt     *time.Time `json:"last_alert_at"`
 	IsActive        bool       `gorm:"default:true" json:"is_active"`
 
 	// Relations

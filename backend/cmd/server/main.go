@@ -12,6 +12,7 @@ import (
 
 	"github.com/oFuterman/light-house/internal/config"
 	"github.com/oFuterman/light-house/internal/database"
+	"github.com/oFuterman/light-house/internal/notifier"
 	"github.com/oFuterman/light-house/internal/router"
 	"github.com/oFuterman/light-house/internal/worker"
 )
@@ -22,6 +23,7 @@ func main() {
 
 	// Load configuration
 	cfg := config.Load()
+	notifier.Init(cfg)
 
 	// Validate critical config
 	if cfg.JWTSecret == "change-me-in-production" && cfg.Environment == "production" {
