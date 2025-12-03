@@ -7,6 +7,7 @@ interface UseCheckSummaryOptions {
   checkId: number;
   windowHours?: number;
   enabled?: boolean;
+  refreshTrigger?: number;
 }
 
 interface UseCheckSummaryReturn {
@@ -20,6 +21,7 @@ export function useCheckSummary({
   checkId,
   windowHours = 24,
   enabled = true,
+  refreshTrigger = 0,
 }: UseCheckSummaryOptions): UseCheckSummaryReturn {
   const [summary, setSummary] = useState<CheckSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +49,7 @@ export function useCheckSummary({
 
   useEffect(() => {
     fetchSummary();
-  }, [checkId, windowHours, enabled]);
+  }, [checkId, windowHours, enabled, refreshTrigger]);
 
   return { summary, isLoading, error, refetch: fetchSummary };
 }

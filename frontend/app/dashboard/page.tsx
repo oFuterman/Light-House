@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, Check } from "@/lib/api";
 import { AuthGuard } from "@/components/auth-guard";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CheckTableRow } from "@/components/CheckTableRow";
+import { AutoRefreshToggle } from "@/components/AutoRefreshToggle";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
 export default function DashboardPage() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
     loadChecks();
@@ -31,6 +34,22 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
+  // Silent refresh for auto-refresh (no loading state)
+  const silentRefresh = useCallback(async () => {
+    try {
+      const data = await api.getChecks();
+      setChecks(Array.isArray(data) ? data : []);
+      setRefreshCount((c) => c + 1);
+    } catch (err) {
+      console.error("Auto-refresh failed:", err);
+    }
+  }, []);
+
+  const { isEnabled: autoRefreshEnabled, setEnabled: setAutoRefreshEnabled } = useAutoRefresh({
+    callback: silentRefresh,
+    intervalMs: 30000,
+  });
 
   if (loading) {
     return (
@@ -57,7 +76,12 @@ export default function DashboardPage() {
       <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Uptime Checks</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <AutoRefreshToggle
+            isEnabled={autoRefreshEnabled}
+            onToggle={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+            intervalSeconds={30}
+          />
           <Link
             href="/settings"
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
@@ -137,7 +161,7 @@ export default function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {checks.map((check) => (
-                <CheckTableRow key={check.id} check={check} />
+                <CheckTableRow key={check.id} check={check} refreshTrigger={refreshCount} />
               ))}
             </tbody>
           </table>

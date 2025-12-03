@@ -8,12 +8,14 @@ import { useCheckSummary } from "@/hooks/useCheckSummary";
 
 interface CheckTableRowProps {
   check: Check;
+  refreshTrigger?: number;
 }
 
-export function CheckTableRow({ check }: CheckTableRowProps) {
+export function CheckTableRow({ check, refreshTrigger = 0 }: CheckTableRowProps) {
   const { summary, isLoading } = useCheckSummary({
     checkId: check.id,
     windowHours: 24,
+    refreshTrigger,
   });
 
   return (
