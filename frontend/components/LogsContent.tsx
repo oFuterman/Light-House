@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { LogEntry, SearchRequest } from "@/lib/api";
+import { LogEntry } from "@/lib/api";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { LogsFilterBar } from "@/components/LogsFilterBar";
+import { LogsSearchBar } from "@/components/LogsSearchBar";
 import { useLogsSearch } from "@/hooks/useLogsSearch";
+import { LogFilter, filtersToSearchRequest } from "@/lib/logs-filter";
 
 const levelColors: Record<string, string> = {
   DEBUG: "bg-gray-100 text-gray-700",
@@ -68,11 +70,28 @@ function LogEntryRow({ log }: { log: LogEntry }) {
 }
 
 export function LogsContent() {
+  const [filters, setFilters] = useState<LogFilter[]>([]);
+  const [timeRangeHours, setTimeRangeHours] = useState(24);
   const { data: logs, total, isLoading, error, search, refetch } = useLogsSearch();
 
-  const handleSearch = (request: SearchRequest) => {
+  // Auto-execute search when filters or time range change
+  const executeSearch = useCallback(() => {
+    const request = filtersToSearchRequest(filters, timeRangeHours);
     search(request);
-  };
+  }, [filters, timeRangeHours, search]);
+
+  // Run search when filters or time range change
+  useEffect(() => {
+    executeSearch();
+  }, [executeSearch]);
+
+  const handleFiltersChange = useCallback((newFilters: LogFilter[]) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleTimeRangeChange = useCallback((hours: number) => {
+    setTimeRangeHours(hours);
+  }, []);
 
   return (
     <div>
@@ -103,7 +122,13 @@ export function LogsContent() {
       </div>
 
       <div className="mb-6">
-        <LogsFilterBar onSearch={handleSearch} isLoading={isLoading} />
+        <LogsSearchBar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          timeRangeHours={timeRangeHours}
+          onTimeRangeChange={handleTimeRangeChange}
+          isLoading={isLoading}
+        />
       </div>
 
       {isLoading ? (

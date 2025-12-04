@@ -147,6 +147,16 @@ export interface SearchResponse<T> {
   offset: number;
 }
 
+// Log facets response for filter suggestions
+export interface LogFacetsResponse {
+  levels: string[];
+  services: string[];
+  environments: string[];
+  regions: string[];
+  tag_keys: string[];
+  tag_values: Record<string, string[]>;
+}
+
 // LogEntry type for structured logs
 export interface LogEntry {
   id: number;
@@ -308,6 +318,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify(searchRequest),
     }),
+
+  getLogFacets: () =>
+    request<LogFacetsResponse>("/logs/facets"),
 
   searchTraces: (searchRequest: SearchRequest) =>
     request<SearchResponse<TraceSpan>>("/traces/search", {

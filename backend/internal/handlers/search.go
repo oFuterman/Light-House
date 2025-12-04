@@ -161,6 +161,112 @@ func SearchLogs(db *gorm.DB) fiber.Handler {
     }
 }
 
+// LogFacetsResponse contains distinct values for filterable log fields
+type LogFacetsResponse struct {
+    Levels       []string            `json:"levels"`
+    Services     []string            `json:"services"`
+    Environments []string            `json:"environments"`
+    Regions      []string            `json:"regions"`
+    TagKeys      []string            `json:"tag_keys"`
+    TagValues    map[string][]string `json:"tag_values"`
+}
+
+// GetLogFacets returns distinct values for filterable log fields
+func GetLogFacets(db *gorm.DB) fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        orgID := c.Locals("orgID").(uint)
+
+        facets := LogFacetsResponse{
+            TagValues: make(map[string][]string),
+        }
+
+        // Get distinct levels
+        var levels []string
+        if err := db.Model(&models.LogEntry{}).
+            Where("org_id = ?", orgID).
+            Distinct("level").
+            Where("level != ''").
+            Pluck("level", &levels).Error; err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to get levels",
+            })
+        }
+        facets.Levels = levels
+
+        // Get distinct service names
+        var services []string
+        if err := db.Model(&models.LogEntry{}).
+            Where("org_id = ?", orgID).
+            Distinct("service_name").
+            Where("service_name != ''").
+            Pluck("service_name", &services).Error; err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to get services",
+            })
+        }
+        facets.Services = services
+
+        // Get distinct environments
+        var environments []string
+        if err := db.Model(&models.LogEntry{}).
+            Where("org_id = ?", orgID).
+            Distinct("environment").
+            Where("environment != ''").
+            Pluck("environment", &environments).Error; err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to get environments",
+            })
+        }
+        facets.Environments = environments
+
+        // Get distinct regions
+        var regions []string
+        if err := db.Model(&models.LogEntry{}).
+            Where("org_id = ?", orgID).
+            Distinct("region").
+            Where("region != ''").
+            Pluck("region", &regions).Error; err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to get regions",
+            })
+        }
+        facets.Regions = regions
+
+        // Get distinct tag keys from JSONB column
+        var tagKeys []string
+        if err := db.Raw(`
+            SELECT DISTINCT jsonb_object_keys(tags) as key
+            FROM log_entries
+            WHERE org_id = ? AND tags IS NOT NULL AND tags != '{}'::jsonb
+            ORDER BY key
+        `, orgID).Pluck("key", &tagKeys).Error; err != nil {
+            // Log error but don't fail - tags are optional
+            tagKeys = []string{}
+        }
+        facets.TagKeys = tagKeys
+
+        // Get distinct values for each tag key (limit to avoid huge responses)
+        for _, key := range tagKeys {
+            var values []string
+            // Use jsonb_exists instead of ? operator to avoid GORM placeholder conflict
+            if err := db.Raw(`
+                SELECT DISTINCT tags->>? as value
+                FROM log_entries
+                WHERE org_id = ? AND jsonb_exists(tags, ?) AND tags->>? IS NOT NULL AND tags->>? != ''
+                ORDER BY value
+                LIMIT 100
+            `, key, orgID, key, key, key).Pluck("value", &values).Error; err != nil {
+                continue // Skip this key if query fails
+            }
+            if len(values) > 0 {
+                facets.TagValues[key] = values
+            }
+        }
+
+        return c.JSON(facets)
+    }
+}
+
 // SearchTraces handles POST /api/v1/traces/search
 func SearchTraces(db *gorm.DB) fiber.Handler {
     return func(c *fiber.Ctx) error {

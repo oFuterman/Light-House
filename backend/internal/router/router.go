@@ -70,5 +70,6 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 
 	// Search endpoints
 	protected.Post("/logs/search", handlers.SearchLogs(db))
+	protected.Get("/logs/facets", handlers.GetLogFacets(db))
 	protected.Post("/traces/search", handlers.SearchTraces(db))
 }
