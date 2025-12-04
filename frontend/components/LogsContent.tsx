@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { LogEntry } from "@/lib/api";
 import { Loading } from "@/components/ui/Loading";
@@ -72,7 +72,9 @@ function LogEntryRow({ log }: { log: LogEntry }) {
 export function LogsContent() {
   const [filters, setFilters] = useState<LogFilter[]>([]);
   const [timeRangeHours, setTimeRangeHours] = useState(24);
-  const { data: logs, total, isLoading, error, search, refetch } = useLogsSearch();
+  const { data: logs, total, isLoading, isLoadingMore, error, search, refetch, loadMore, hasMore } = useLogsSearch();
+  const logsContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   // Auto-execute search when filters or time range change
   const executeSearch = useCallback(() => {
@@ -92,6 +94,24 @@ export function LogsContent() {
   const handleTimeRangeChange = useCallback((hours: number) => {
     setTimeRangeHours(hours);
   }, []);
+
+  // Infinite scroll: use IntersectionObserver to detect when we scroll near the bottom
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: "100px" }
+    );
+
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, isLoadingMore, loadMore]);
 
   return (
     <div>
@@ -162,10 +182,37 @@ export function LogsContent() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div ref={logsContainerRef} className="space-y-2">
           {logs.map((log) => (
             <LogEntryRow key={log.id} log={log} />
           ))}
+
+          {/* Infinite scroll trigger */}
+          <div ref={loadMoreTriggerRef} className="h-1" />
+
+          {/* Loading more indicator */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-4">
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span className="text-sm">Loading more logs...</span>
+              </div>
+            </div>
+          )}
+
+          {/* End of results indicator */}
+          {!hasMore && logs.length > 0 && (
+            <div className="text-center py-4 text-sm text-gray-500">
+              End of results ({logs.length} logs)
+            </div>
+          )}
         </div>
       )}
     </div>

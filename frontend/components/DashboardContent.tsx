@@ -1,40 +1,80 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
-import { api, Check } from "@/lib/api";
+import { useCallback, useEffect, useRef } from "react";
 import { CheckTableRow } from "@/components/CheckTableRow";
 import { AutoRefreshToggle } from "@/components/AutoRefreshToggle";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useChecksSearch } from "@/hooks/useChecksSearch";
+import { Loading } from "@/components/ui/Loading";
+import { ErrorState } from "@/components/ui/ErrorState";
 
-interface DashboardContentProps {
-  initialChecks: Check[];
-}
-
-export function DashboardContent({ initialChecks }: DashboardContentProps) {
-  const [checks, setChecks] = useState<Check[]>(initialChecks);
-  const [refreshCount, setRefreshCount] = useState(0);
+export function DashboardContent() {
+  const {
+    data: checks,
+    total,
+    isLoading,
+    isLoadingMore,
+    error,
+    refetch,
+    loadMore,
+    hasMore,
+  } = useChecksSearch();
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   // Silent refresh for auto-refresh (no loading state)
   const silentRefresh = useCallback(async () => {
-    try {
-      const data = await api.getChecks();
-      setChecks(Array.isArray(data) ? data : []);
-      setRefreshCount((c) => c + 1);
-    } catch (err) {
-      console.error("Auto-refresh failed:", err);
-    }
-  }, []);
+    refetch();
+  }, [refetch]);
 
   const { isEnabled: autoRefreshEnabled, setEnabled: setAutoRefreshEnabled } = useAutoRefresh({
     callback: silentRefresh,
     intervalMs: 30000,
   });
 
+  // Infinite scroll: use IntersectionObserver to detect when we scroll near the bottom
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: "100px" }
+    );
+
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, isLoadingMore, loadMore]);
+
+  if (isLoading) {
+    return <Loading message="Loading checks..." />;
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Failed to load checks"
+        message={error}
+        onRetry={refetch}
+      />
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Uptime Checks</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Uptime Checks</h1>
+          {total > 0 && (
+            <p className="text-sm text-gray-500 mt-1">
+              Showing {checks.length} of {total} checks
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <AutoRefreshToggle
             isEnabled={autoRefreshEnabled}
@@ -120,10 +160,37 @@ export function DashboardContent({ initialChecks }: DashboardContentProps) {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {checks.map((check) => (
-                <CheckTableRow key={check.id} check={check} refreshTrigger={refreshCount} />
+                <CheckTableRow key={check.id} check={check} refreshTrigger={0} />
               ))}
             </tbody>
           </table>
+
+          {/* Infinite scroll trigger */}
+          <div ref={loadMoreTriggerRef} className="h-1" />
+
+          {/* Loading more indicator */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span className="text-sm">Loading more checks...</span>
+              </div>
+            </div>
+          )}
+
+          {/* End of results indicator */}
+          {!hasMore && checks.length > 0 && checks.length < total && (
+            <div className="text-center py-4 text-sm text-gray-500 border-t border-gray-100">
+              End of results ({checks.length} checks)
+            </div>
+          )}
         </div>
       )}
     </div>

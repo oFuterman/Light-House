@@ -1,53 +1,42 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { api, LogEntry, SearchRequest, SearchResponse } from "@/lib/api";
+import { api, Check, SearchRequest, SearchResponse } from "@/lib/api";
 
 const PAGE_SIZE = 100;
 
-interface UseLogsSearchOptions {
-  initialRequest?: SearchRequest;
+interface UseChecksSearchOptions {
   enabled?: boolean;
 }
 
-interface UseLogsSearchReturn {
-  data: LogEntry[];
+interface UseChecksSearchReturn {
+  data: Check[];
   total: number;
   isLoading: boolean;
   isLoadingMore: boolean;
   error: string | null;
   refetch: () => void;
-  search: (request: SearchRequest) => void;
   loadMore: () => void;
   hasMore: boolean;
-  request: SearchRequest;
-  setRequest: (request: SearchRequest) => void;
 }
 
 const defaultRequest: SearchRequest = {
-  time_range: {
-    from: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  filters: [],
-  tags: [],
-  sort: [{ field: "timestamp", dir: "desc" }],
+  sort: [{ field: "created_at", dir: "desc" }],
   limit: PAGE_SIZE,
   offset: 0,
 };
 
-export function useLogsSearch({
-  initialRequest = defaultRequest,
+export function useChecksSearch({
   enabled = true,
-}: UseLogsSearchOptions = {}): UseLogsSearchReturn {
-  const [data, setData] = useState<LogEntry[]>([]);
+}: UseChecksSearchOptions = {}): UseChecksSearchReturn {
+  const [data, setData] = useState<Check[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [request, setRequest] = useState<SearchRequest>(initialRequest);
   const currentOffsetRef = useRef(0);
 
-  const fetchLogs = useCallback(async (searchRequest: SearchRequest, append = false) => {
+  const fetchChecks = useCallback(async (append = false) => {
     if (!enabled) {
       setIsLoading(false);
       return;
@@ -62,12 +51,11 @@ export function useLogsSearch({
     setError(null);
 
     try {
-      const requestWithPagination = {
-        ...searchRequest,
-        limit: PAGE_SIZE,
+      const request: SearchRequest = {
+        ...defaultRequest,
         offset: append ? currentOffsetRef.current : 0,
       };
-      const response: SearchResponse<LogEntry> = await api.searchLogs(requestWithPagination);
+      const response: SearchResponse<Check> = await api.searchChecks(request);
 
       if (append) {
         setData(prev => [...prev, ...(response.data || [])]);
@@ -77,7 +65,7 @@ export function useLogsSearch({
       setTotal(response.total || 0);
       currentOffsetRef.current = (append ? currentOffsetRef.current : 0) + (response.data?.length || 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to search logs");
+      setError(err instanceof Error ? err.message : "Failed to fetch checks");
       if (!append) {
         setData([]);
         setTotal(0);
@@ -88,27 +76,21 @@ export function useLogsSearch({
     }
   }, [enabled]);
 
-  const search = useCallback((newRequest: SearchRequest) => {
-    setRequest(newRequest);
-    currentOffsetRef.current = 0;
-    fetchLogs(newRequest, false);
-  }, [fetchLogs]);
-
   const loadMore = useCallback(() => {
     if (isLoadingMore || isLoading) return;
     if (currentOffsetRef.current >= total) return;
-    fetchLogs(request, true);
-  }, [fetchLogs, request, isLoadingMore, isLoading, total]);
+    fetchChecks(true);
+  }, [fetchChecks, isLoadingMore, isLoading, total]);
 
   const refetch = useCallback(() => {
     currentOffsetRef.current = 0;
-    fetchLogs(request, false);
-  }, [fetchLogs, request]);
+    fetchChecks(false);
+  }, [fetchChecks]);
 
   const hasMore = currentOffsetRef.current < total;
 
   useEffect(() => {
-    fetchLogs(request, false);
+    fetchChecks(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
@@ -119,10 +101,7 @@ export function useLogsSearch({
     isLoadingMore,
     error,
     refetch,
-    search,
     loadMore,
     hasMore,
-    request,
-    setRequest,
   };
 }
