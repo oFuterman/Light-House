@@ -44,6 +44,7 @@ interface LogRowProps {
   isExpanded: boolean;
   onToggle: () => void;
   onAddFilter: (key: string, value: string) => void;
+  onSetTimeRange: (timestamp: string) => void;
 }
 
 // Clickable field value component
@@ -76,7 +77,7 @@ function ClickableValue({
   );
 }
 
-function LogRow({ log, isExpanded, onToggle, onAddFilter }: LogRowProps) {
+function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogRowProps) {
   const level = (log.level || "INFO").toUpperCase();
   const borderColor = levelBorderColors[level] || levelBorderColors.INFO;
   const textColor = levelTextColors[level] || levelTextColors.INFO;
@@ -113,7 +114,16 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter }: LogRowProps) {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Timestamp:</span>
-                  <p className="font-mono text-gray-900">{new Date(log.timestamp).toISOString()}</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSetTimeRange(log.timestamp);
+                    }}
+                    className="font-mono text-gray-900 hover:bg-blue-100 hover:text-blue-700 px-1 -mx-1 rounded transition-colors cursor-pointer text-left"
+                    title="Search ±1 hour around this time"
+                  >
+                    {new Date(log.timestamp).toISOString()}
+                  </button>
                 </div>
                 <div>
                   <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Level:</span>
@@ -262,6 +272,15 @@ export function LogsContent() {
     setFilters((prev) => [...prev, newFilter]);
   }, [filters]);
 
+  // Set time range to ±1 hour around a timestamp
+  const handleSetTimeRangeFromTimestamp = useCallback((timestamp: string) => {
+    const date = new Date(timestamp);
+    const oneHourMs = 60 * 60 * 1000;
+    const from = new Date(date.getTime() - oneHourMs);
+    const to = new Date(date.getTime() + oneHourMs);
+    setTimeRange({ from, to });
+  }, []);
+
   // Infinite scroll: use IntersectionObserver to detect when we scroll near the bottom
   useEffect(() => {
     const trigger = loadMoreTriggerRef.current;
@@ -379,6 +398,7 @@ export function LogsContent() {
                   isExpanded={expandedLogId === log.id}
                   onToggle={() => toggleLogExpanded(log.id)}
                   onAddFilter={handleAddFilter}
+                  onSetTimeRange={handleSetTimeRangeFromTimestamp}
                 />
               ))}
             </tbody>
