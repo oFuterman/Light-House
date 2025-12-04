@@ -56,9 +56,10 @@ interface FieldContextMenuProps {
   onAddToTable: () => void;
   onClose: () => void;
   isTimestamp?: boolean;
+  canAddToTable?: boolean;
 }
 
-function FieldContextMenu({ x, y, fieldKey, fieldValue, onSearch, onAddToTable, onClose, isTimestamp }: FieldContextMenuProps) {
+function FieldContextMenu({ x, y, fieldKey, fieldValue, onSearch, onAddToTable, onClose, isTimestamp, canAddToTable = true }: FieldContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ function FieldContextMenu({ x, y, fieldKey, fieldValue, onSearch, onAddToTable, 
         </svg>
         {isTimestamp ? "Search ±1 hour" : `Search ${fieldKey}`}
       </button>
-      {!isTimestamp && (
+      {!isTimestamp && canAddToTable && (
         <button
           onClick={() => {
             onAddToTable();
@@ -200,6 +201,9 @@ function LogRow({ log, isExpanded, onToggle, onFieldClick, customColumns }: LogR
         <td className="py-1.5 px-3 whitespace-nowrap text-gray-700 max-w-[150px] truncate">
           {log.service_name || "-"}
         </td>
+        <td className="py-1.5 px-3 whitespace-nowrap text-gray-600 max-w-[120px] truncate">
+          {log.environment || "-"}
+        </td>
         {/* Custom columns */}
         {customColumns.map((col) => (
           <td key={col.key} className="py-1.5 px-3 whitespace-nowrap text-gray-700 max-w-[150px] truncate">
@@ -214,7 +218,7 @@ function LogRow({ log, isExpanded, onToggle, onFieldClick, customColumns }: LogR
       {/* Expanded details panel */}
       {isExpanded && (
         <tr className="bg-gray-50 border-l-2 border-l-blue-500">
-          <td colSpan={4 + customColumns.length} className="p-0">
+          <td colSpan={5 + customColumns.length} className="p-0">
             <div className="p-4 space-y-4" onClick={(e) => e.stopPropagation()}>
               {/* Primary fields */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -441,11 +445,19 @@ export function LogsContent() {
     }
   }, [contextMenu, filters]);
 
+  // Fields that are already in the default table columns
+  const DEFAULT_COLUMNS = ["timestamp", "level", "service_name", "environment", "message"];
+
   // Add field to table as custom column
   const handleAddToTable = useCallback(() => {
     if (!contextMenu) return;
 
     const { fieldKey } = contextMenu;
+
+    // Check if it's a default column (can't be added)
+    if (DEFAULT_COLUMNS.includes(fieldKey)) {
+      return;
+    }
 
     // Check if column already exists
     if (customColumns.some((col) => col.key === fieldKey)) {
@@ -521,6 +533,7 @@ export function LogsContent() {
           onAddToTable={handleAddToTable}
           onClose={handleCloseContextMenu}
           isTimestamp={contextMenu.isTimestamp}
+          canAddToTable={!DEFAULT_COLUMNS.includes(contextMenu.fieldKey) && !customColumns.some((col) => col.key === contextMenu.fieldKey)}
         />
       )}
 
@@ -632,6 +645,15 @@ export function LogsContent() {
                   >
                     <span>Service</span>
                     <SortIndicator field="service_name" currentSort={sortConfig} />
+                  </button>
+                </th>
+                <th className="py-2 px-3 font-medium w-[120px]">
+                  <button
+                    onClick={() => handleSort("environment")}
+                    className="flex items-center gap-1 hover:text-gray-900"
+                  >
+                    <span>Env</span>
+                    <SortIndicator field="environment" currentSort={sortConfig} />
                   </button>
                 </th>
                 {/* Custom columns */}
