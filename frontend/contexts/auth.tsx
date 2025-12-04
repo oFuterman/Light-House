@@ -15,7 +15,7 @@ interface AuthContextType {
   isAuthLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, orgName: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,27 +29,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     verifyAuth();
   }, []);
 
+  // Verify auth by calling /me endpoint
+  // Cookie is sent automatically with credentials: 'include'
   const verifyAuth = async () => {
-    const token = localStorage.getItem("token");
-
-    // No token present - user is not logged in
-    if (!token) {
-      setUser(null);
-      setIsAuthLoading(false);
-      return;
-    }
-
-    // Token exists - verify it with the backend
     try {
       const userData = await api.getMe();
       setUser(userData);
-      // Update stored user data in case it changed
-      localStorage.setItem("user", JSON.stringify(userData));
-    } catch (err) {
-      // Token is invalid or expired - clear auth state
-      console.error("Auth verification failed:", err);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+    } catch {
+      // Not authenticated or token expired
       setUser(null);
     } finally {
       setIsAuthLoading(false);
@@ -58,23 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
-    localStorage.setItem("token", response.token);
-    localStorage.setItem("user", JSON.stringify(response.user));
+    // Cookie is set by the server, we just store user info in state
     setUser(response.user);
     setIsAuthLoading(false);
   };
 
   const signup = async (email: string, password: string, orgName: string) => {
     const response = await api.signup(email, password, orgName);
-    localStorage.setItem("token", response.token);
-    localStorage.setItem("user", JSON.stringify(response.user));
+    // Cookie is set by the server, we just store user info in state
     setUser(response.user);
     setIsAuthLoading(false);
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear the cookie on server
+      await api.logout();
+    } catch {
+      // Ignore errors - we'll clear state anyway
+    }
     setUser(null);
     setIsAuthLoading(false);
     router.push("/login");

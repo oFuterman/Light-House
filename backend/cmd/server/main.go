@@ -50,8 +50,9 @@ func main() {
 	app.Use(recover.New())
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: cfg.CORSOrigins,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization, X-API-Key",
+		AllowOrigins:     cfg.CORSOrigins,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-API-Key",
+		AllowCredentials: true,
 	}))
 
 	// Setup routes (pass config for JWT secret)

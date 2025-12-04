@@ -8,7 +8,7 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/light_house?sslmode=disable
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - SMTP_HOST=mailpit
@@ -30,6 +30,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+      - INTERNAL_API_URL=http://api:8080/api/v1
     volumes:
       - ./frontend:/app
       - /app/node_modules

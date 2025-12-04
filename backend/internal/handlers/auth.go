@@ -36,6 +36,35 @@ type UserResponse struct {
 // JWTSecret is set by the router during initialization
 var JWTSecret string
 
+// Environment is set by the router during initialization ("development" or "production")
+var Environment string
+
+// setAuthCookie sets the JWT token as an HttpOnly cookie
+func setAuthCookie(c *fiber.Ctx, token string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    token,
+		HTTPOnly: true,
+		Secure:   Environment == "production",
+		SameSite: "Lax",
+		Path:     "/",
+		MaxAge:   86400, // 24 hours (matches JWT expiry)
+	})
+}
+
+// clearAuthCookie removes the auth cookie
+func clearAuthCookie(c *fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "token",
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   Environment == "production",
+		SameSite: "Lax",
+		Path:     "/",
+		MaxAge:   -1, // Delete cookie
+	})
+}
+
 // Signup creates a new user and organization
 func Signup(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -114,6 +143,9 @@ func Signup(db *gorm.DB) fiber.Handler {
 			})
 		}
 
+		// Set auth cookie for browser clients
+		setAuthCookie(c, token)
+
 		return c.Status(fiber.StatusCreated).JSON(AuthResponse{
 			Token: token,
 			User: UserResponse{
@@ -166,6 +198,9 @@ func Login(db *gorm.DB) fiber.Handler {
 			})
 		}
 
+		// Set auth cookie for browser clients
+		setAuthCookie(c, token)
+
 		return c.JSON(AuthResponse{
 			Token: token,
 			User: UserResponse{
@@ -197,10 +232,9 @@ func GetMe(db *gorm.DB) fiber.Handler {
 	}
 }
 
-// Logout invalidates the current session
+// Logout invalidates the current session by clearing the auth cookie
 func Logout(c *fiber.Ctx) error {
-	// For JWT, logout is typically handled client-side by discarding the token
-	// Server-side token blocklist could be implemented for enhanced security
+	clearAuthCookie(c)
 	return c.JSON(fiber.Map{
 		"message": "logged out successfully",
 	})

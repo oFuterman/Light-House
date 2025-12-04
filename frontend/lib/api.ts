@@ -176,31 +176,39 @@ export interface TraceSpan {
   tags?: Record<string, unknown>;
 }
 
-// Helper to get auth token
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
-}
-
 // Base fetch wrapper
+// Uses credentials: 'include' to send cookies with requests
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getToken();
-
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...options.headers,
   };
 
-  if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: "include", // Send cookies with requests
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Request failed");
+  }
+
+  return response.json();
+}
+
+// Auth API - uses Next.js API routes (proxy) to set cookies on frontend domain
+async function authRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`/api/auth${endpoint}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });
 
   if (!response.ok) {
@@ -213,20 +221,25 @@ async function request<T>(
 
 // API methods
 export const api = {
-  // Auth
+  // Auth - proxied through Next.js API routes
   login: (email: string, password: string) =>
-    request<AuthResponse>("/auth/login", {
+    authRequest<{ user: User }>("/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
 
   signup: (email: string, password: string, org_name: string) =>
-    request<AuthResponse>("/auth/signup", {
+    authRequest<{ user: User }>("/signup", {
       method: "POST",
       body: JSON.stringify({ email, password, org_name }),
     }),
 
   getMe: () => request<User>("/me"),
+
+  logout: () =>
+    authRequest<{ message: string }>("/logout", {
+      method: "POST",
+    }),
 
   // Checks
   getChecks: () => request<Check[]>("/checks"),

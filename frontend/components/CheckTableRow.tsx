@@ -5,6 +5,7 @@ import { Check } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
 import { UptimeBadge } from "./UptimeBadge";
 import { useCheckSummary } from "@/hooks/useCheckSummary";
+import { ClientDate, ClientDateOffset } from "./ClientDate";
 
 interface CheckTableRowProps {
   check: Check;
@@ -41,17 +42,14 @@ export function CheckTableRow({ check, refreshTrigger = 0 }: CheckTableRowProps)
         />
       </td>
       <td className="px-4 py-3 text-sm text-gray-600">
-        {check.last_checked_at
-          ? new Date(check.last_checked_at).toLocaleString()
-          : "Never"}
+        <ClientDate date={check.last_checked_at} fallback="Never" />
       </td>
       <td className="px-4 py-3 text-sm text-gray-600">
-        {check.last_checked_at
-          ? new Date(
-              new Date(check.last_checked_at).getTime() +
-                check.interval_seconds * 1000
-            ).toLocaleString()
-          : "Soon"}
+        <ClientDateOffset
+          date={check.last_checked_at}
+          offsetSeconds={check.interval_seconds}
+          fallback="Soon"
+        />
       </td>
     </tr>
   );

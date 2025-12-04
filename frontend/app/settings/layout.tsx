@@ -2,20 +2,19 @@ import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth-server";
 import { DashboardNav } from "@/components/DashboardNav";
 
-export default async function DashboardLayout({
+export default async function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Server-side auth check - redirects before any JS loads
   if (!(await isAuthenticated())) {
     redirect("/login");
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <DashboardNav />
-      <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
+      {children}
     </div>
   );
 }

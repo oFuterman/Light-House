@@ -14,24 +14,32 @@ import (
 var JWTSecret string
 
 // AuthRequired validates JWT tokens and sets user context
+// Accepts token from cookie (browser) or Authorization header (API clients)
 func AuthRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
-		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "missing authorization header",
-			})
-		}
+		var tokenString string
 
-		// Extract token from "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "invalid authorization header format",
-			})
-		}
+		// Try cookie first (browser clients)
+		tokenString = c.Cookies("token")
 
-		tokenString := parts[1]
+		// Fall back to Authorization header (API clients)
+		if tokenString == "" {
+			authHeader := c.Get("Authorization")
+			if authHeader == "" {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "missing authorization",
+				})
+			}
+
+			// Extract token from "Bearer <token>"
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "invalid authorization header format",
+				})
+			}
+			tokenString = parts[1]
+		}
 
 		// Parse and validate token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

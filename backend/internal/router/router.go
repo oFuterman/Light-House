@@ -9,8 +9,9 @@ import (
 )
 
 func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
-	// Initialize JWT secret for handlers and middleware
+	// Initialize JWT secret and environment for handlers and middleware
 	handlers.JWTSecret = cfg.JWTSecret
+	handlers.Environment = cfg.Environment
 	middleware.JWTSecret = cfg.JWTSecret
 
 	// Health check
