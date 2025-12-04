@@ -7,7 +7,7 @@ import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LogsSearchBar } from "@/components/LogsSearchBar";
 import { useLogsSearch } from "@/hooks/useLogsSearch";
-import { LogFilter, filtersToSearchRequest } from "@/lib/logs-filter";
+import { LogFilter, filtersToSearchRequest, createFilter, isDuplicateFilter } from "@/lib/logs-filter";
 
 // Level colors - left border style like Datadog
 const levelBorderColors: Record<string, string> = {
@@ -42,9 +42,40 @@ interface LogRowProps {
   log: LogEntry;
   isExpanded: boolean;
   onToggle: () => void;
+  onAddFilter: (key: string, value: string) => void;
 }
 
-function LogRow({ log, isExpanded, onToggle }: LogRowProps) {
+// Clickable field value component
+function ClickableValue({
+  fieldKey,
+  value,
+  onAddFilter,
+  className = "",
+}: {
+  fieldKey: string;
+  value: string | undefined | null;
+  onAddFilter: (key: string, value: string) => void;
+  className?: string;
+}) {
+  if (!value || value === "-") {
+    return <span className={className}>-</span>;
+  }
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onAddFilter(fieldKey, value);
+      }}
+      className={`${className} hover:bg-blue-100 hover:text-blue-700 px-1 -mx-1 rounded transition-colors cursor-pointer text-left`}
+      title={`Filter by ${fieldKey}:${value}`}
+    >
+      {value}
+    </button>
+  );
+}
+
+function LogRow({ log, isExpanded, onToggle, onAddFilter }: LogRowProps) {
   const level = (log.level || "INFO").toUpperCase();
   const borderColor = levelBorderColors[level] || levelBorderColors.INFO;
   const textColor = levelTextColors[level] || levelTextColors.INFO;
@@ -76,48 +107,78 @@ function LogRow({ log, isExpanded, onToggle }: LogRowProps) {
       {isExpanded && (
         <tr className="bg-gray-50 border-l-2 border-l-blue-500">
           <td colSpan={4} className="p-0">
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4" onClick={(e) => e.stopPropagation()}>
               {/* Primary fields */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500 text-xs uppercase tracking-wide">Timestamp</span>
+                  <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Timestamp:</span>
                   <p className="font-mono text-gray-900">{new Date(log.timestamp).toISOString()}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500 text-xs uppercase tracking-wide">Level</span>
-                  <p className={`font-medium ${textColor}`}>{level}</p>
+                  <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Level:</span>
+                  <ClickableValue
+                    fieldKey="level"
+                    value={level}
+                    onAddFilter={onAddFilter}
+                    className={`font-medium ${textColor}`}
+                  />
                 </div>
                 <div>
-                  <span className="text-gray-500 text-xs uppercase tracking-wide">Service</span>
-                  <p className="text-gray-900">{log.service_name || "-"}</p>
+                  <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Service:</span>
+                  <ClickableValue
+                    fieldKey="service_name"
+                    value={log.service_name}
+                    onAddFilter={onAddFilter}
+                    className="text-gray-900"
+                  />
                 </div>
                 <div>
-                  <span className="text-gray-500 text-xs uppercase tracking-wide">Environment</span>
-                  <p className="text-gray-900">{log.environment || "-"}</p>
+                  <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Environment:</span>
+                  <ClickableValue
+                    fieldKey="environment"
+                    value={log.environment}
+                    onAddFilter={onAddFilter}
+                    className="text-gray-900"
+                  />
                 </div>
                 {log.region && (
                   <div>
-                    <span className="text-gray-500 text-xs uppercase tracking-wide">Region</span>
-                    <p className="text-gray-900">{log.region}</p>
+                    <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Region:</span>
+                    <ClickableValue
+                      fieldKey="region"
+                      value={log.region}
+                      onAddFilter={onAddFilter}
+                      className="text-gray-900"
+                    />
                   </div>
                 )}
                 {log.trace_id && (
                   <div>
-                    <span className="text-gray-500 text-xs uppercase tracking-wide">Trace ID</span>
-                    <p className="font-mono text-gray-900 text-xs">{log.trace_id}</p>
+                    <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Trace ID:</span>
+                    <ClickableValue
+                      fieldKey="trace_id"
+                      value={log.trace_id}
+                      onAddFilter={onAddFilter}
+                      className="font-mono text-gray-900 text-xs"
+                    />
                   </div>
                 )}
                 {log.span_id && (
                   <div>
-                    <span className="text-gray-500 text-xs uppercase tracking-wide">Span ID</span>
-                    <p className="font-mono text-gray-900 text-xs">{log.span_id}</p>
+                    <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Span ID:</span>
+                    <ClickableValue
+                      fieldKey="span_id"
+                      value={log.span_id}
+                      onAddFilter={onAddFilter}
+                      className="font-mono text-gray-900 text-xs"
+                    />
                   </div>
                 )}
               </div>
 
               {/* Message */}
               <div>
-                <span className="text-gray-500 text-xs uppercase tracking-wide">Message</span>
+                <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Message:</span>
                 <p className="font-mono text-gray-900 text-sm whitespace-pre-wrap break-all bg-white p-2 rounded border border-gray-200 mt-1">
                   {log.message}
                 </p>
@@ -126,16 +187,21 @@ function LogRow({ log, isExpanded, onToggle }: LogRowProps) {
               {/* Tags */}
               {log.tags && Object.keys(log.tags).length > 0 && (
                 <div>
-                  <span className="text-gray-500 text-xs uppercase tracking-wide">Tags</span>
+                  <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Tags:</span>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {Object.entries(log.tags).map(([key, value]) => (
-                      <span
+                      <button
                         key={key}
-                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700 font-mono"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddFilter(key, String(value));
+                        }}
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700 font-mono hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer"
+                        title={`Filter by ${key}:${value}`}
                       >
                         <span className="text-gray-500">{key}:</span>
                         <span className="ml-1">{String(value)}</span>
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -177,6 +243,16 @@ export function LogsContent() {
   const toggleLogExpanded = useCallback((logId: number) => {
     setExpandedLogId((prev) => (prev === logId ? null : logId));
   }, []);
+
+  // Add a filter when clicking on a field value
+  const handleAddFilter = useCallback((key: string, value: string) => {
+    // Don't add duplicate filters
+    if (isDuplicateFilter(filters, key, value)) {
+      return;
+    }
+    const newFilter = createFilter(key, value);
+    setFilters((prev) => [...prev, newFilter]);
+  }, [filters]);
 
   // Infinite scroll: use IntersectionObserver to detect when we scroll near the bottom
   useEffect(() => {
@@ -294,6 +370,7 @@ export function LogsContent() {
                   log={log}
                   isExpanded={expandedLogId === log.id}
                   onToggle={() => toggleLogExpanded(log.id)}
+                  onAddFilter={handleAddFilter}
                 />
               ))}
             </tbody>

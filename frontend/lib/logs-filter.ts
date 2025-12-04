@@ -18,6 +18,7 @@ export const STANDARD_FIELDS: FieldSuggestion[] = [
   { key: "level", label: "level", description: "Log level", values: ["DEBUG", "INFO", "WARN", "ERROR"] },
   { key: "service_name", label: "service", description: "Service name", values: null },
   { key: "environment", label: "environment", description: "Environment", values: null },
+  { key: "region", label: "region", description: "Region", values: null },
   { key: "message", label: "message", description: "Message content", values: null },
 ];
 
@@ -28,6 +29,7 @@ const FIELD_LABEL_TO_KEY: Record<string, string> = {
   service_name: "service_name",
   environment: "environment",
   env: "environment",
+  region: "region",
   message: "message",
   msg: "message",
 };
