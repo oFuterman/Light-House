@@ -1,4 +1,5 @@
 import { SearchRequest, FilterCondition, TagFilter } from "./api";
+import { TimeRange } from "@/components/TimeRangePicker";
 
 export interface LogFilter {
   id: string;
@@ -73,7 +74,7 @@ export function createFilter(field: string, value: string): LogFilter {
   };
 }
 
-export function filtersToSearchRequest(filters: LogFilter[], timeRangeHours: number): SearchRequest {
+export function filtersToSearchRequest(filters: LogFilter[], timeRange: TimeRange): SearchRequest {
   const filterConditions: FilterCondition[] = [];
   const tagFilters: TagFilter[] = [];
 
@@ -97,7 +98,8 @@ export function filtersToSearchRequest(filters: LogFilter[], timeRangeHours: num
 
   return {
     time_range: {
-      from: new Date(Date.now() - timeRangeHours * 60 * 60 * 1000).toISOString(),
+      from: timeRange.from.toISOString(),
+      to: timeRange.to.toISOString(),
     },
     filters: filterConditions,
     tags: tagFilters,

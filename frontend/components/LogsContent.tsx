@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { LogEntry } from "@/lib/api";
 import { Loading } from "@/components/ui/Loading";
@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LogsSearchBar } from "@/components/LogsSearchBar";
 import { useLogsSearch } from "@/hooks/useLogsSearch";
 import { LogFilter, filtersToSearchRequest, createFilter, isDuplicateFilter } from "@/lib/logs-filter";
+import { TimeRange } from "@/components/TimeRangePicker";
 
 // Level colors - left border style like Datadog
 const levelBorderColors: Record<string, string> = {
@@ -214,18 +215,25 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter }: LogRowProps) {
   );
 }
 
+// Helper to create default time range (15 minutes ago)
+function createDefaultTimeRange(): TimeRange {
+  const now = new Date();
+  const from = new Date(now.getTime() - 15 * 60 * 1000);
+  return { from, to: now };
+}
+
 export function LogsContent() {
   const [filters, setFilters] = useState<LogFilter[]>([]);
-  const [timeRangeHours, setTimeRangeHours] = useState(24);
+  const [timeRange, setTimeRange] = useState<TimeRange>(createDefaultTimeRange);
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
   const { data: logs, total, isLoading, isLoadingMore, error, search, refetch, loadMore, hasMore } = useLogsSearch();
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   // Auto-execute search when filters or time range change
   const executeSearch = useCallback(() => {
-    const request = filtersToSearchRequest(filters, timeRangeHours);
+    const request = filtersToSearchRequest(filters, timeRange);
     search(request);
-  }, [filters, timeRangeHours, search]);
+  }, [filters, timeRange, search]);
 
   // Run search when filters or time range change
   useEffect(() => {
@@ -236,8 +244,8 @@ export function LogsContent() {
     setFilters(newFilters);
   }, []);
 
-  const handleTimeRangeChange = useCallback((hours: number) => {
-    setTimeRangeHours(hours);
+  const handleTimeRangeChange = useCallback((newRange: TimeRange) => {
+    setTimeRange(newRange);
   }, []);
 
   const toggleLogExpanded = useCallback((logId: number) => {
@@ -308,7 +316,7 @@ export function LogsContent() {
         <LogsSearchBar
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          timeRangeHours={timeRangeHours}
+          timeRange={timeRange}
           onTimeRangeChange={handleTimeRangeChange}
           isLoading={isLoading}
         />

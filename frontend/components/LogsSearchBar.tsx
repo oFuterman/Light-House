@@ -5,28 +5,31 @@ import { api, LogFacetsResponse } from "@/lib/api";
 import { LogFilter, createFilter, isDuplicateFilter, filterToString } from "@/lib/logs-filter";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { FilterChip } from "./FilterChip";
+import { TimeRangePicker, TimeRange } from "./TimeRangePicker";
 
-const TIME_RANGE_OPTIONS = [
-  { label: "Last hour", hours: 1 },
-  { label: "Last 24 hours", hours: 24 },
-  { label: "Last 7 days", hours: 168 },
-];
+// Define filter key type
+interface FilterKeyDef {
+  key: string;
+  label: string;
+  description: string;
+  type: "field" | "tag";
+}
 
 // Define core filter keys with display names
-const CORE_FILTER_KEYS = [
-  { key: "level", label: "level", description: "Log level", type: "field" as const },
-  { key: "service_name", label: "service", description: "Service name", type: "field" as const },
-  { key: "environment", label: "environment", description: "Environment", type: "field" as const },
-  { key: "region", label: "region", description: "Region", type: "field" as const },
-  { key: "message", label: "message", description: "Message content", type: "field" as const },
-  { key: "trace_id", label: "trace_id", description: "Trace ID", type: "field" as const },
+const CORE_FILTER_KEYS: FilterKeyDef[] = [
+  { key: "level", label: "level", description: "Log level", type: "field" },
+  { key: "service_name", label: "service", description: "Service name", type: "field" },
+  { key: "environment", label: "environment", description: "Environment", type: "field" },
+  { key: "region", label: "region", description: "Region", type: "field" },
+  { key: "message", label: "message", description: "Message content", type: "field" },
+  { key: "trace_id", label: "trace_id", description: "Trace ID", type: "field" },
 ];
 
 interface LogsSearchBarProps {
   filters: LogFilter[];
   onFiltersChange: (filters: LogFilter[]) => void;
-  timeRangeHours: number;
-  onTimeRangeChange: (hours: number) => void;
+  timeRange: TimeRange;
+  onTimeRangeChange: (range: TimeRange) => void;
   isLoading?: boolean;
 }
 
@@ -35,7 +38,7 @@ type InputMode = "idle" | "key" | "value";
 export function LogsSearchBar({
   filters,
   onFiltersChange,
-  timeRangeHours,
+  timeRange,
   onTimeRangeChange,
   isLoading,
 }: LogsSearchBarProps) {
@@ -110,8 +113,8 @@ export function LogsSearchBar({
   );
 
   // Build complete list of filter keys (core + tags)
-  const getAllFilterKeys = useCallback(() => {
-    const allKeys = [...CORE_FILTER_KEYS];
+  const getAllFilterKeys = useCallback((): FilterKeyDef[] => {
+    const allKeys: FilterKeyDef[] = [...CORE_FILTER_KEYS];
 
     // Add tag keys from facets
     if (facets?.tag_keys) {
@@ -122,7 +125,7 @@ export function LogsSearchBar({
             key: tagKey,
             label: tagKey,
             description: "Tag",
-            type: "tag" as const,
+            type: "tag",
           });
         }
       }
@@ -395,43 +398,24 @@ export function LogsSearchBar({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      {/* Time Range */}
-      <div className="flex items-center justify-between">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
-          <div className="inline-flex rounded-md shadow-sm" role="group">
-            {TIME_RANGE_OPTIONS.map((option, index) => (
-              <button
-                key={option.hours}
-                type="button"
-                onClick={() => onTimeRangeChange(option.hours)}
-                disabled={isLoading}
-                className={`
-                  px-4 py-2 text-sm font-medium border
-                  ${index === 0 ? "rounded-l-md" : ""}
-                  ${index === TIME_RANGE_OPTIONS.length - 1 ? "rounded-r-md" : ""}
-                  ${index !== 0 ? "-ml-px" : ""}
-                  focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  ${
-                    timeRangeHours === option.hours
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }
-                `}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+      {/* Time Range - visible on small screens only */}
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between">
+          <TimeRangePicker
+            value={timeRange}
+            onChange={onTimeRangeChange}
+            disabled={isLoading}
+          />
+          {facetsLoading && (
+            <span className="text-xs text-gray-400">Loading filters...</span>
+          )}
         </div>
-        {facetsLoading && (
-          <span className="text-xs text-gray-400">Loading filters...</span>
-        )}
       </div>
 
-      {/* Search Bar */}
-      <div ref={containerRef} className="relative">
+      {/* Search Bar + Time Range (inline on large screens) */}
+      <div className="flex gap-3 items-start">
+        {/* Search Bar */}
+        <div ref={containerRef} className="relative flex-1 lg:flex-[3]">
         <div
           className={`
             flex items-center border rounded-md transition-all
@@ -546,7 +530,7 @@ export function LogsSearchBar({
                   )}
                   <span className={item.type === "key" || item.type === "custom" ? "font-medium" : ""}>{item.label}</span>
                 </div>
-                {item.description && <span className="text-gray-400 text-xs">{item.description}</span>}
+                {"description" in item && item.description && <span className="text-gray-400 text-xs">{item.description}</span>}
               </button>
             ))}
           </div>
@@ -563,6 +547,16 @@ export function LogsSearchBar({
             </p>
           </div>
         )}
+        </div>
+
+        {/* Time Range - visible on large screens only */}
+        <div className="hidden lg:block lg:flex-[2]">
+          <TimeRangePicker
+            value={timeRange}
+            onChange={onTimeRangeChange}
+            disabled={isLoading}
+          />
+        </div>
       </div>
 
       {/* Filter Chips */}
