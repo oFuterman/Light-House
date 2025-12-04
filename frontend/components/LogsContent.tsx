@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { LogEntry } from "@/lib/api";
 import { Loading } from "@/components/ui/Loading";
@@ -39,25 +39,125 @@ function formatTimestamp(timestamp: string): string {
   return `${month} ${day} ${time}.${ms}`;
 }
 
+// Custom column definition
+interface CustomColumn {
+  key: string;
+  label: string;
+  addedAt: number; // timestamp for ordering
+}
+
+// Context menu for field actions
+interface FieldContextMenuProps {
+  x: number;
+  y: number;
+  fieldKey: string;
+  fieldValue: string;
+  onSearch: () => void;
+  onAddToTable: () => void;
+  onClose: () => void;
+  isTimestamp?: boolean;
+}
+
+function FieldContextMenu({ x, y, fieldKey, fieldValue, onSearch, onAddToTable, onClose, isTimestamp }: FieldContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
+  // Adjust position if menu would go off-screen
+  const adjustedX = Math.min(x, window.innerWidth - 200);
+  const adjustedY = Math.min(y, window.innerHeight - 100);
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]"
+      style={{ left: adjustedX, top: adjustedY }}
+    >
+      <button
+        onClick={() => {
+          onSearch();
+          onClose();
+        }}
+        className="w-full px-3 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        {isTimestamp ? "Search ±1 hour" : `Search ${fieldKey}`}
+      </button>
+      {!isTimestamp && (
+        <button
+          onClick={() => {
+            onAddToTable();
+            onClose();
+          }}
+          className="w-full px-3 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Add to table
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface LogRowProps {
   log: LogEntry;
   isExpanded: boolean;
   onToggle: () => void;
-  onAddFilter: (key: string, value: string) => void;
-  onSetTimeRange: (timestamp: string) => void;
+  onFieldClick: (e: React.MouseEvent, fieldKey: string, fieldValue: string, isTimestamp?: boolean) => void;
+  customColumns: CustomColumn[];
+}
+
+// Get field value from log entry (supports nested tags)
+function getFieldValue(log: LogEntry, fieldKey: string): string {
+  switch (fieldKey) {
+    case "level":
+      return (log.level || "").toUpperCase();
+    case "service_name":
+      return log.service_name || "-";
+    case "environment":
+      return log.environment || "-";
+    case "region":
+      return log.region || "-";
+    case "trace_id":
+      return log.trace_id || "-";
+    case "span_id":
+      return log.span_id || "-";
+    case "message":
+      return log.message || "-";
+    default:
+      // Check in tags
+      if (log.tags && fieldKey in log.tags) {
+        return String(log.tags[fieldKey]);
+      }
+      return "-";
+  }
 }
 
 // Clickable field value component
 function ClickableValue({
   fieldKey,
   value,
-  onAddFilter,
+  onFieldClick,
   className = "",
+  isTimestamp = false,
 }: {
   fieldKey: string;
   value: string | undefined | null;
-  onAddFilter: (key: string, value: string) => void;
+  onFieldClick: (e: React.MouseEvent, fieldKey: string, fieldValue: string, isTimestamp?: boolean) => void;
   className?: string;
+  isTimestamp?: boolean;
 }) {
   if (!value || value === "-") {
     return <span className={className}>-</span>;
@@ -67,17 +167,17 @@ function ClickableValue({
     <button
       onClick={(e) => {
         e.stopPropagation();
-        onAddFilter(fieldKey, value);
+        onFieldClick(e, fieldKey, value, isTimestamp);
       }}
       className={`${className} hover:bg-blue-100 hover:text-blue-700 px-1 -mx-1 rounded transition-colors cursor-pointer text-left`}
-      title={`Filter by ${fieldKey}:${value}`}
+      title={isTimestamp ? "Click for options" : `Click for options on ${fieldKey}:${value}`}
     >
       {value}
     </button>
   );
 }
 
-function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogRowProps) {
+function LogRow({ log, isExpanded, onToggle, onFieldClick, customColumns }: LogRowProps) {
   const level = (log.level || "INFO").toUpperCase();
   const borderColor = levelBorderColors[level] || levelBorderColors.INFO;
   const textColor = levelTextColors[level] || levelTextColors.INFO;
@@ -100,6 +200,12 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
         <td className="py-1.5 px-3 whitespace-nowrap text-gray-700 max-w-[150px] truncate">
           {log.service_name || "-"}
         </td>
+        {/* Custom columns */}
+        {customColumns.map((col) => (
+          <td key={col.key} className="py-1.5 px-3 whitespace-nowrap text-gray-700 max-w-[150px] truncate">
+            {getFieldValue(log, col.key)}
+          </td>
+        ))}
         <td className="py-1.5 px-3 text-gray-800 font-mono truncate max-w-[600px]">
           {log.message}
         </td>
@@ -108,29 +214,26 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
       {/* Expanded details panel */}
       {isExpanded && (
         <tr className="bg-gray-50 border-l-2 border-l-blue-500">
-          <td colSpan={4} className="p-0">
+          <td colSpan={4 + customColumns.length} className="p-0">
             <div className="p-4 space-y-4" onClick={(e) => e.stopPropagation()}>
               {/* Primary fields */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Timestamp:</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSetTimeRange(log.timestamp);
-                    }}
-                    className="font-mono text-gray-900 hover:bg-blue-100 hover:text-blue-700 px-1 -mx-1 rounded transition-colors cursor-pointer text-left"
-                    title="Search ±1 hour around this time"
-                  >
-                    {new Date(log.timestamp).toISOString()}
-                  </button>
+                  <ClickableValue
+                    fieldKey="timestamp"
+                    value={new Date(log.timestamp).toISOString()}
+                    onFieldClick={(e) => onFieldClick(e, "timestamp", log.timestamp, true)}
+                    className="font-mono text-gray-900"
+                    isTimestamp
+                  />
                 </div>
                 <div>
                   <span className="text-gray-500 text-xs uppercase tracking-wide block mb-1">Level:</span>
                   <ClickableValue
                     fieldKey="level"
                     value={level}
-                    onAddFilter={onAddFilter}
+                    onFieldClick={onFieldClick}
                     className={`font-medium ${textColor}`}
                   />
                 </div>
@@ -139,7 +242,7 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
                   <ClickableValue
                     fieldKey="service_name"
                     value={log.service_name}
-                    onAddFilter={onAddFilter}
+                    onFieldClick={onFieldClick}
                     className="text-gray-900"
                   />
                 </div>
@@ -148,7 +251,7 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
                   <ClickableValue
                     fieldKey="environment"
                     value={log.environment}
-                    onAddFilter={onAddFilter}
+                    onFieldClick={onFieldClick}
                     className="text-gray-900"
                   />
                 </div>
@@ -158,7 +261,7 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
                     <ClickableValue
                       fieldKey="region"
                       value={log.region}
-                      onAddFilter={onAddFilter}
+                      onFieldClick={onFieldClick}
                       className="text-gray-900"
                     />
                   </div>
@@ -169,7 +272,7 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
                     <ClickableValue
                       fieldKey="trace_id"
                       value={log.trace_id}
-                      onAddFilter={onAddFilter}
+                      onFieldClick={onFieldClick}
                       className="font-mono text-gray-900 text-xs"
                     />
                   </div>
@@ -180,7 +283,7 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
                     <ClickableValue
                       fieldKey="span_id"
                       value={log.span_id}
-                      onAddFilter={onAddFilter}
+                      onFieldClick={onFieldClick}
                       className="font-mono text-gray-900 text-xs"
                     />
                   </div>
@@ -205,10 +308,10 @@ function LogRow({ log, isExpanded, onToggle, onAddFilter, onSetTimeRange }: LogR
                         key={key}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onAddFilter(key, String(value));
+                          onFieldClick(e, key, String(value));
                         }}
                         className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700 font-mono hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer"
-                        title={`Filter by ${key}:${value}`}
+                        title={`Click for options on ${key}:${value}`}
                       >
                         <span className="text-gray-500">{key}:</span>
                         <span className="ml-1">{String(value)}</span>
@@ -232,10 +335,24 @@ function createDefaultTimeRange(): TimeRange {
   return { from, to: now };
 }
 
+// Format field key for display
+function formatFieldLabel(key: string): string {
+  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function LogsContent() {
   const [filters, setFilters] = useState<LogFilter[]>([]);
   const [timeRange, setTimeRange] = useState<TimeRange>(createDefaultTimeRange);
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
+  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    fieldKey: string;
+    fieldValue: string;
+    isTimestamp: boolean;
+  } | null>(null);
+
   const { data: logs, total, isLoading, isLoadingMore, error, search, refetch, loadMore, hasMore } = useLogsSearch();
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
@@ -262,23 +379,75 @@ export function LogsContent() {
     setExpandedLogId((prev) => (prev === logId ? null : logId));
   }, []);
 
-  // Add a filter when clicking on a field value
-  const handleAddFilter = useCallback((key: string, value: string) => {
-    // Don't add duplicate filters
-    if (isDuplicateFilter(filters, key, value)) {
+  // Handle field click - show context menu
+  const handleFieldClick = useCallback((e: React.MouseEvent, fieldKey: string, fieldValue: string, isTimestamp = false) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      fieldKey,
+      fieldValue,
+      isTimestamp,
+    });
+  }, []);
+
+  // Add a filter when searching on a field
+  const handleSearchField = useCallback(() => {
+    if (!contextMenu) return;
+
+    const { fieldKey, fieldValue, isTimestamp } = contextMenu;
+
+    if (isTimestamp) {
+      // Set time range to ±1 hour around the timestamp
+      const date = new Date(fieldValue);
+      const oneHourMs = 60 * 60 * 1000;
+      const from = new Date(date.getTime() - oneHourMs);
+      const to = new Date(date.getTime() + oneHourMs);
+      setTimeRange({ from, to });
+    } else {
+      // Add filter
+      if (!isDuplicateFilter(filters, fieldKey, fieldValue)) {
+        const newFilter = createFilter(fieldKey, fieldValue);
+        setFilters((prev) => [...prev, newFilter]);
+      }
+    }
+  }, [contextMenu, filters]);
+
+  // Add field to table as custom column
+  const handleAddToTable = useCallback(() => {
+    if (!contextMenu) return;
+
+    const { fieldKey } = contextMenu;
+
+    // Check if column already exists
+    if (customColumns.some((col) => col.key === fieldKey)) {
       return;
     }
-    const newFilter = createFilter(key, value);
-    setFilters((prev) => [...prev, newFilter]);
-  }, [filters]);
 
-  // Set time range to ±1 hour around a timestamp
-  const handleSetTimeRangeFromTimestamp = useCallback((timestamp: string) => {
-    const date = new Date(timestamp);
-    const oneHourMs = 60 * 60 * 1000;
-    const from = new Date(date.getTime() - oneHourMs);
-    const to = new Date(date.getTime() + oneHourMs);
-    setTimeRange({ from, to });
+    const newColumn: CustomColumn = {
+      key: fieldKey,
+      label: formatFieldLabel(fieldKey),
+      addedAt: Date.now(),
+    };
+
+    setCustomColumns((prev) => {
+      // If we already have 2 columns, remove the oldest one
+      if (prev.length >= 2) {
+        const sorted = [...prev].sort((a, b) => a.addedAt - b.addedAt);
+        return [...sorted.slice(1), newColumn];
+      }
+      return [...prev, newColumn];
+    });
+  }, [contextMenu, customColumns]);
+
+  // Remove custom column
+  const handleRemoveColumn = useCallback((key: string) => {
+    setCustomColumns((prev) => prev.filter((col) => col.key !== key));
+  }, []);
+
+  // Close context menu
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
   }, []);
 
   // Infinite scroll: use IntersectionObserver to detect when we scroll near the bottom
@@ -301,6 +470,20 @@ export function LogsContent() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Context Menu */}
+      {contextMenu && (
+        <FieldContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          fieldKey={contextMenu.fieldKey}
+          fieldValue={contextMenu.fieldValue}
+          onSearch={handleSearchField}
+          onAddToTable={handleAddToTable}
+          onClose={handleCloseContextMenu}
+          isTimestamp={contextMenu.isTimestamp}
+        />
+      )}
+
       {/* Header */}
       <div className="flex-shrink-0 mb-4">
         <div className="flex justify-between items-center mb-4">
@@ -387,6 +570,23 @@ export function LogsContent() {
                 <th className="py-2 px-3 font-medium w-[180px]">Date</th>
                 <th className="py-2 px-3 font-medium w-[70px]">Level</th>
                 <th className="py-2 px-3 font-medium w-[150px]">Service</th>
+                {/* Custom columns */}
+                {customColumns.map((col) => (
+                  <th key={col.key} className="py-2 px-3 font-medium w-[150px]">
+                    <div className="flex items-center gap-1">
+                      <span>{col.label}</span>
+                      <button
+                        onClick={() => handleRemoveColumn(col.key)}
+                        className="p-0.5 hover:bg-gray-200 rounded text-gray-400 hover:text-red-500"
+                        title={`Remove ${col.label} column`}
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </th>
+                ))}
                 <th className="py-2 px-3 font-medium">Message</th>
               </tr>
             </thead>
@@ -397,8 +597,8 @@ export function LogsContent() {
                   log={log}
                   isExpanded={expandedLogId === log.id}
                   onToggle={() => toggleLogExpanded(log.id)}
-                  onAddFilter={handleAddFilter}
-                  onSetTimeRange={handleSetTimeRangeFromTimestamp}
+                  onFieldClick={handleFieldClick}
+                  customColumns={customColumns}
                 />
               ))}
             </tbody>
