@@ -2,14 +2,23 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
 import { CheckTableRow } from "@/components/CheckTableRow";
 import { AutoRefreshToggle } from "@/components/AutoRefreshToggle";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { useChecksSearch } from "@/hooks/useChecksSearch";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { useAuth } from "@/contexts/auth";
 
 export function DashboardContent() {
+  const params = useParams();
+  const { user } = useAuth();
+
+  // F4 mitigation: prefer params, fallback to auth context
+  const slug = (params?.slug as string) || user?.org_slug || "";
+  const basePath = slug ? `/org/${slug}` : "";
+
   const {
     data: checks,
     total,
@@ -82,13 +91,13 @@ export function DashboardContent() {
             intervalSeconds={30}
           />
           <Link
-            href="/settings"
+            href={`${basePath}/settings`}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
           >
             Settings
           </Link>
           <Link
-            href="/checks/new"
+            href={`${basePath}/checks/new`}
             className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm"
           >
             New Check
@@ -118,7 +127,7 @@ export function DashboardContent() {
             Get started by creating your first uptime check. Light House will monitor your endpoints and record results automatically.
           </p>
           <Link
-            href="/checks/new"
+            href={`${basePath}/checks/new`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm"
           >
             <svg

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { Check } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
 import { UptimeBadge } from "./UptimeBadge";
 import { useCheckSummary } from "@/hooks/useCheckSummary";
 import { ClientDate, ClientDateOffset } from "./ClientDate";
+import { useAuth } from "@/contexts/auth";
 
 interface CheckTableRowProps {
   check: Check;
@@ -13,6 +15,13 @@ interface CheckTableRowProps {
 }
 
 export function CheckTableRow({ check, refreshTrigger = 0 }: CheckTableRowProps) {
+  const params = useParams();
+  const { user } = useAuth();
+
+  // F4 mitigation: prefer params, fallback to auth context
+  const slug = (params?.slug as string) || user?.org_slug || "";
+  const basePath = slug ? `/org/${slug}` : "";
+
   const { summary, isLoading } = useCheckSummary({
     checkId: check.id,
     windowHours: 24,
@@ -23,7 +32,7 @@ export function CheckTableRow({ check, refreshTrigger = 0 }: CheckTableRowProps)
     <tr className="hover:bg-gray-50">
       <td className="px-4 py-3">
         <Link
-          href={`/checks/${check.id}`}
+          href={`${basePath}/checks/${check.id}`}
           className="font-medium text-gray-900 hover:underline"
         >
           {check.name}

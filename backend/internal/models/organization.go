@@ -13,6 +13,7 @@ type Organization struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	Name string `gorm:"not null;size:255" json:"name"`
+	Slug string `gorm:"uniqueIndex;size:100" json:"slug"` // URL-friendly identifier
 
 	// Billing & Subscription
 	Plan                     Plan    `gorm:"size:20;default:'free'" json:"plan"`

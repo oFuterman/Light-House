@@ -42,6 +42,10 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	auth.Post("/login", handlers.Login(db))
 	auth.Post("/logout", handlers.Logout)
 
+	// Slug suggestion and validation (public - used during signup)
+	auth.Post("/suggest-slug", handlers.SuggestSlug(db))
+	auth.Post("/check-slug", handlers.CheckSlug(db))
+
 	// Invite routes (public - for accepting invites)
 	v1.Get("/invites/:token", handlers.GetInviteInfo(db))
 	v1.Post("/invites/:token/accept", middleware.RateLimitAuth(), handlers.AcceptInvite(db))

@@ -43,7 +43,9 @@ export default function AcceptInvitePage() {
     try {
       await api.acceptInvite(token, password);
       await refreshUser();
-      router.push("/dashboard");
+      // F2 mitigation: redirect to org-prefixed path if org_slug available from invite info
+      // Fallback to /dashboard which middleware will redirect
+      router.push(inviteInfo?.org_slug ? `/org/${inviteInfo.org_slug}/dashboard` : "/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept invite");
       setIsSubmitting(false);

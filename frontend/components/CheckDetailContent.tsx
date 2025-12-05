@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { api, Check, CheckResult } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
 import { TimeRangeSelector } from "@/components/TimeRangeSelector";
@@ -9,6 +10,7 @@ import { LazyChart } from "@/components/LazyChart";
 import { AlertsTab } from "@/components/AlertsTab";
 import { CheckResultsTab } from "@/components/CheckResultsTab";
 import { ClientDate } from "@/components/ClientDate";
+import { useAuth } from "@/contexts/auth";
 
 type Tab = "results" | "alerts";
 
@@ -18,6 +20,13 @@ interface CheckDetailContentProps {
 }
 
 export function CheckDetailContent({ check, initialResults }: CheckDetailContentProps) {
+  const params = useParams();
+  const { user } = useAuth();
+
+  // F4 mitigation: prefer params, fallback to auth context
+  const slug = (params?.slug as string) || user?.org_slug || "";
+  const basePath = slug ? `/org/${slug}` : "";
+
   const [results, setResults] = useState<CheckResult[]>(initialResults);
   const [windowHours, setWindowHours] = useState(24);
   const [chartLoading, setChartLoading] = useState(false);
@@ -46,7 +55,7 @@ export function CheckDetailContent({ check, initialResults }: CheckDetailContent
     <div>
       <div className="mb-6">
         <Link
-          href="/dashboard"
+          href={`${basePath}/dashboard`}
           className="text-sm text-gray-600 hover:text-gray-900"
         >
           ← Back to Dashboard

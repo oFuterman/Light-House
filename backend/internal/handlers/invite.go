@@ -256,9 +256,10 @@ func GetInviteInfo(db *gorm.DB) fiber.Handler {
 		}
 
 		return c.JSON(fiber.Map{
-			"email":     invite.Email,
-			"org_name":  invite.Organization.Name,
-			"role":      invite.Role,
+			"email":      invite.Email,
+			"org_name":   invite.Organization.Name,
+			"org_slug":   invite.Organization.Slug,
+			"role":       invite.Role,
 			"expires_at": invite.ExpiresAt,
 		})
 	}
@@ -288,7 +289,7 @@ func AcceptInvite(db *gorm.DB) fiber.Handler {
 		}
 
 		var invite models.Invite
-		if err := db.Where("token = ?", token).First(&invite).Error; err != nil {
+		if err := db.Preload("Organization").Where("token = ?", token).First(&invite).Error; err != nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "invite not found",
 			})
@@ -376,10 +377,12 @@ func AcceptInvite(db *gorm.DB) fiber.Handler {
 		return c.Status(fiber.StatusCreated).JSON(AuthResponse{
 			Token: jwtToken,
 			User: UserResponse{
-				ID:    user.ID,
-				Email: user.Email,
-				OrgID: user.OrgID,
-				Role:  user.Role,
+				ID:      user.ID,
+				Email:   user.Email,
+				OrgID:   user.OrgID,
+				Role:    user.Role,
+				OrgName: invite.Organization.Name,
+				OrgSlug: invite.Organization.Slug,
 			},
 		})
 	}

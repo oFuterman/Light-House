@@ -9,6 +9,7 @@ export interface User {
   org_id: number;
   role: Role;
   org_name?: string;
+  org_slug?: string;
 }
 
 export interface Member {
@@ -34,6 +35,7 @@ export interface Invite {
 export interface InviteInfo {
   email: string;
   org_name: string;
+  org_slug: string;
   role: Role;
   expires_at: string;
 }
@@ -150,6 +152,24 @@ export interface LogEvent {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+// Slug types
+export interface SlugSuggestion {
+  slug: string;
+  available: boolean;
+}
+
+export interface SlugSuggestionResponse {
+  primary: SlugSuggestion;
+  alternatives: SlugSuggestion[];
+}
+
+export interface SlugCheckResponse {
+  slug: string;
+  available: boolean;
+  valid: boolean;
+  error?: string;
 }
 
 export interface NotificationSettings {
@@ -370,10 +390,37 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
-  signup: (email: string, password: string, org_name: string) =>
+  signup: (email: string, password: string, org_name: string, slug?: string) =>
     authRequest<{ user: User }>("/signup", {
       method: "POST",
-      body: JSON.stringify({ email, password, org_name }),
+      body: JSON.stringify({ email, password, org_name, slug }),
+    }),
+
+  // Slug suggestion and validation (public - used during signup)
+  suggestSlug: (org_name: string) =>
+    fetch(`${API_URL}/auth/suggest-slug`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ org_name }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || "Failed to get slug suggestions");
+      }
+      return res.json() as Promise<SlugSuggestionResponse>;
+    }),
+
+  checkSlug: (slug: string) =>
+    fetch(`${API_URL}/auth/check-slug`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || "Failed to check slug");
+      }
+      return res.json() as Promise<SlugCheckResponse>;
     }),
 
   getMe: () => request<User>("/me"),

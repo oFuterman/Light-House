@@ -14,8 +14,8 @@ import { api, User, Role } from "@/lib/api";
 interface AuthContextType {
   user: User | null;
   isAuthLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, orgName: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  signup: (email: string, password: string, orgName: string, slug?: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   isOwner: boolean;
@@ -58,18 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const response = await api.login(email, password);
     // Cookie is set by the server, we just store user info in state
     setUser(response.user);
     setIsAuthLoading(false);
+    return response.user;
   };
 
-  const signup = async (email: string, password: string, orgName: string) => {
-    const response = await api.signup(email, password, orgName);
+  const signup = async (email: string, password: string, orgName: string, slug?: string): Promise<User> => {
+    const response = await api.signup(email, password, orgName, slug);
     // Cookie is set by the server, we just store user info in state
     setUser(response.user);
     setIsAuthLoading(false);
+    return response.user;
   };
 
   const logout = async () => {

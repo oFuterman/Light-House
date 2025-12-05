@@ -19,8 +19,10 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      const user = await login(email, password);
+      // F2 mitigation: redirect to org-prefixed path if org_slug available
+      // Fallback to /dashboard which middleware will redirect
+      router.push(user.org_slug ? `/org/${user.org_slug}/dashboard` : "/dashboard");
     } catch {
       setError("Invalid email or password");
     } finally {

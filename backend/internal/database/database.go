@@ -1,9 +1,12 @@
 package database
 
 import (
+    "fmt"
     "log"
+
     "github.com/oFuterman/light-house/internal/config"
     "github.com/oFuterman/light-house/internal/models"
+    "github.com/oFuterman/light-house/internal/utils"
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
     "gorm.io/gorm/logger"
@@ -53,6 +56,9 @@ func Migrate(db *gorm.DB) error {
     if err := migrateExistingOrgsToFreePlan(db); err != nil {
         log.Printf("Warning: org plan migration may have failed: %v", err)
     }
+    if err := migrateOrganizationSlugs(db); err != nil {
+        log.Printf("Warning: org slug migration may have failed: %v", err)
+    }
     return nil
 }
 
@@ -100,4 +106,45 @@ func createObservabilityIndexes(db *gorm.DB) error {
         }
     }
     return nil
+}
+
+// migrateOrganizationSlugs generates slugs for existing orgs without them
+// Mitigates: B4 (partial migration) - runs in transaction for atomicity
+func migrateOrganizationSlugs(db *gorm.DB) error {
+    return db.Transaction(func(tx *gorm.DB) error {
+        // Find all orgs with empty slug
+        var orgs []models.Organization
+        if err := tx.Where("slug IS NULL OR slug = ''").Find(&orgs).Error; err != nil {
+            return err
+        }
+
+        if len(orgs) == 0 {
+            return nil // No orgs need migration
+        }
+
+        log.Printf("Migrating slugs for %d organizations...", len(orgs))
+
+        // Generate unique slug for each org
+        for _, org := range orgs {
+            baseSlug := utils.GenerateSlug(org.Name)
+            if baseSlug == "" {
+                // B2 mitigation: fallback for empty/unicode names
+                baseSlug = fmt.Sprintf("org-%d", org.ID)
+            }
+
+            slug, err := utils.EnsureUniqueSlug(tx, baseSlug, &org.ID)
+            if err != nil {
+                return fmt.Errorf("failed to generate slug for org %d (%s): %w", org.ID, org.Name, err)
+            }
+
+            if err := tx.Model(&org).Update("slug", slug).Error; err != nil {
+                return fmt.Errorf("failed to update slug for org %d: %w", org.ID, err)
+            }
+
+            log.Printf("  Org %d: %s -> %s", org.ID, org.Name, slug)
+        }
+
+        log.Printf("Slug migration completed successfully")
+        return nil
+    })
 }

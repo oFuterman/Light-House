@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/auth";
 
 export function NewCheckForm() {
   const router = useRouter();
+  const params = useParams();
+  const { user } = useAuth();
+
+  // F4 mitigation: prefer params, fallback to auth context
+  const slug = (params?.slug as string) || user?.org_slug || "";
+  const basePath = slug ? `/org/${slug}` : "";
+
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [interval, setInterval] = useState(60);
@@ -20,7 +28,8 @@ export function NewCheckForm() {
 
     try {
       await api.createCheck({ name, url, interval_seconds: interval });
-      router.push("/dashboard");
+      // F2 mitigation: fallback to /dashboard if no slug (middleware will redirect)
+      router.push(slug ? `${basePath}/dashboard` : "/dashboard");
     } catch {
       setError("Failed to create check");
     } finally {
@@ -32,7 +41,7 @@ export function NewCheckForm() {
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
         <Link
-          href="/dashboard"
+          href={`${basePath}/dashboard`}
           className="text-sm text-gray-600 hover:text-gray-900"
         >
           ← Back to Dashboard

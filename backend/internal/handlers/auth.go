@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/oFuterman/light-house/internal/models"
+	"github.com/oFuterman/light-house/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -15,6 +16,7 @@ type SignupRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	OrgName  string `json:"org_name"`
+	Slug     string `json:"slug,omitempty"` // Optional custom slug
 }
 
 type LoginRequest struct {
@@ -28,10 +30,12 @@ type AuthResponse struct {
 }
 
 type UserResponse struct {
-	ID    uint        `json:"id"`
-	Email string      `json:"email"`
-	OrgID uint        `json:"org_id"`
-	Role  models.Role `json:"role"`
+	ID      uint        `json:"id"`
+	Email   string      `json:"email"`
+	OrgID   uint        `json:"org_id"`
+	Role    models.Role `json:"role"`
+	OrgName string      `json:"org_name,omitempty"`
+	OrgSlug string      `json:"org_slug,omitempty"`
 }
 
 // JWTSecret is set by the router during initialization
@@ -108,11 +112,54 @@ func Signup(db *gorm.DB) fiber.Handler {
 			})
 		}
 
+		// Determine the slug to use
+		var finalSlug string
+		req.Slug = strings.TrimSpace(req.Slug)
+
+		if req.Slug != "" {
+			// User provided a custom slug - validate it
+			if err := utils.ValidateSlug(req.Slug); err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+
+			// Check availability before transaction (early fail)
+			if !utils.IsSlugAvailable(db, req.Slug, nil) {
+				return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+					"error": "this URL is already taken",
+				})
+			}
+
+			finalSlug = req.Slug
+		} else {
+			// Auto-generate slug from org name
+			baseSlug := utils.GenerateSlug(req.OrgName)
+			if baseSlug == "" {
+				baseSlug = "my-org" // B2 mitigation: fallback for empty/unicode names
+			}
+
+			// Handle reserved slugs
+			if utils.IsReservedSlug(baseSlug) {
+				baseSlug = baseSlug + "-org"
+			}
+
+			var err error
+			finalSlug, err = utils.EnsureUniqueSlug(db, baseSlug, nil)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "failed to generate unique URL",
+				})
+			}
+		}
+
 		// Create organization and user in a transaction
 		var user models.User
+		var org models.Organization
 		err = db.Transaction(func(tx *gorm.DB) error {
-			org := models.Organization{
+			org = models.Organization{
 				Name: req.OrgName,
+				Slug: finalSlug,
 			}
 			if err := tx.Create(&org).Error; err != nil {
 				return err
@@ -157,10 +204,12 @@ func Signup(db *gorm.DB) fiber.Handler {
 		return c.Status(fiber.StatusCreated).JSON(AuthResponse{
 			Token: token,
 			User: UserResponse{
-				ID:    user.ID,
-				Email: user.Email,
-				OrgID: user.OrgID,
-				Role:  user.Role,
+				ID:      user.ID,
+				Email:   user.Email,
+				OrgID:   user.OrgID,
+				Role:    user.Role,
+				OrgName: org.Name,
+				OrgSlug: org.Slug,
 			},
 		})
 	}
@@ -184,9 +233,9 @@ func Login(db *gorm.DB) fiber.Handler {
 			})
 		}
 
-		// Find user by email
+		// Find user by email with organization preloaded
 		var user models.User
-		if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		if err := db.Preload("Organization").Where("email = ?", req.Email).First(&user).Error; err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "invalid email or password",
 			})
@@ -222,10 +271,12 @@ func Login(db *gorm.DB) fiber.Handler {
 		return c.JSON(AuthResponse{
 			Token: token,
 			User: UserResponse{
-				ID:    user.ID,
-				Email: user.Email,
-				OrgID: user.OrgID,
-				Role:  user.Role,
+				ID:      user.ID,
+				Email:   user.Email,
+				OrgID:   user.OrgID,
+				Role:    user.Role,
+				OrgName: user.Organization.Name,
+				OrgSlug: user.Organization.Slug,
 			},
 		})
 	}
@@ -249,6 +300,7 @@ func GetMe(db *gorm.DB) fiber.Handler {
 			"org_id":   user.OrgID,
 			"role":     user.Role,
 			"org_name": user.Organization.Name,
+			"org_slug": user.Organization.Slug,
 		})
 	}
 }
