@@ -166,6 +166,9 @@ func CreateAPIKey(db *gorm.DB) fiber.Handler {
 			})
 		}
 
+		// Sync usage counts after creating
+		billing.SyncResourceCounts(db, orgID)
+
 		// Log audit event
 		logAuditEvent(db, orgID, &userID, models.AuditActionAPIKeyCreated, "apikey", &apiKey.ID, models.JSONMap{
 			"name":   req.Name,
@@ -211,6 +214,9 @@ func DeleteAPIKey(db *gorm.DB) fiber.Handler {
 				"error": "failed to delete API key",
 			})
 		}
+
+		// Sync usage counts after deleting
+		billing.SyncResourceCounts(db, orgID)
 
 		// Log audit event
 		logAuditEvent(db, orgID, &userID, models.AuditActionAPIKeyDeleted, "apikey", &apiKey.ID, models.JSONMap{
