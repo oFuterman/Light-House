@@ -5,8 +5,8 @@ import type { NextRequest } from "next/server";
 // Mitigates: F3 (redirect loops), F6 (broken bookmarks)
 const LEGACY_ROUTES = ["/dashboard", "/checks", "/settings", "/logs"];
 
-// For middleware, use the public API URL (can't use internal Docker network)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+// INTERNAL_API_URL is used inside Docker (api:8080), falls back to public URL
+const API_URL = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

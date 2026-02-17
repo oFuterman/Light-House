@@ -24,39 +24,43 @@ interface TimeRangePickerProps {
   disabled?: boolean;
 }
 
-// Format date for display in the input: "12/03 14:30:00"
+// Format date for display in the input: "17/02/2026 14:30:00"
 function formatDisplayDate(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = date.getDate().toString().padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${month}/${day} ${hours}:${minutes}:${seconds}`;
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
-// Format the full range for input: "12/03 14:30:00 - 12/03 14:45:00"
+// Format the full range for input: "17/02/2026 14:30:00 - 17/02/2026 14:45:00"
 function formatRangeForInput(range: TimeRange): string {
   return `${formatDisplayDate(range.from)} - ${formatDisplayDate(range.to)}`;
 }
 
-// Parse a date string like "12/03 14:30:00" - be lenient with spaces
-function parseDisplayDate(str: string, referenceYear: number): Date | null {
+// Parse a date string like "17/02/2026 14:30:00" - be lenient with spaces
+function parseDisplayDate(str: string): Date | null {
   const cleaned = str.trim();
 
-  // Match: "12/03 14:30:00" or "12/3 14:30:00" - allow multiple spaces
-  const match = cleaned.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+  // Match: "17/02/2026 14:30:00" or "7/2/2026 14:30:00" - allow multiple spaces
+  const match = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
   if (!match) return null;
 
-  const [, monthStr, dayStr, hours, minutes, seconds] = match;
-
-  const month = parseInt(monthStr) - 1; // Convert to 0-indexed
-  if (month < 0 || month > 11) return null;
+  const [, dayStr, monthStr, yearStr, hours, minutes, seconds] = match;
 
   const day = parseInt(dayStr);
   if (day < 1 || day > 31) return null;
 
+  const month = parseInt(monthStr) - 1; // Convert to 0-indexed
+  if (month < 0 || month > 11) return null;
+
+  const year = parseInt(yearStr);
+  if (year < 2020 || year > 2099) return null;
+
   const date = new Date(
-    referenceYear,
+    year,
     month,
     day,
     parseInt(hours),
@@ -67,7 +71,7 @@ function parseDisplayDate(str: string, referenceYear: number): Date | null {
   return isNaN(date.getTime()) ? null : date;
 }
 
-// Parse the full input string: "12/03 14:30:00 - 12/03 14:45:00"
+// Parse the full input string: "17/02/2026 14:30:00 - 17/02/2026 14:45:00"
 // Be lenient with the separator - allow " - ", "-", " -", "- "
 function parseRangeInput(input: string): TimeRange | null {
   // Try splitting on various separator formats
@@ -81,8 +85,8 @@ function parseRangeInput(input: string): TimeRange | null {
     parts = input.split("- ");
   } else if (input.includes("-")) {
     // Find a dash that's likely a separator (not part of a number)
-    // Look for pattern like "00 -" or "00-"
-    const separatorMatch = input.match(/(\d{2})\s*-\s*(\d{2}\/)/);
+    // Look for pattern like "00 -" or "00-" followed by a digit and slash (start of next date)
+    const separatorMatch = input.match(/(\d{2})\s*-\s*(\d{1,2}\/)/);
     if (separatorMatch) {
       const sepIndex = input.indexOf(separatorMatch[0]);
       const dashOffset = separatorMatch[0].indexOf("-");
@@ -95,9 +99,8 @@ function parseRangeInput(input: string): TimeRange | null {
 
   if (parts.length !== 2) return null;
 
-  const currentYear = new Date().getFullYear();
-  const from = parseDisplayDate(parts[0].trim(), currentYear);
-  const to = parseDisplayDate(parts[1].trim(), currentYear);
+  const from = parseDisplayDate(parts[0].trim());
+  const to = parseDisplayDate(parts[1].trim());
 
   if (!from || !to) return null;
   if (from >= to) return null;
@@ -302,7 +305,7 @@ export function TimeRangePicker({ value, onChange, disabled }: TimeRangePickerPr
           {/* Invalid input warning */}
           {!isInputValid && (
             <div className="px-3 py-2 text-xs text-red-600 bg-red-50 border-b border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800">
-              Invalid format. Use: MM/DD HH:MM:SS - MM/DD HH:MM:SS
+              Invalid format. Use: DD/MM/YYYY HH:MM:SS - DD/MM/YYYY HH:MM:SS
             </div>
           )}
 

@@ -73,7 +73,7 @@ export function NotificationSettingsForm() {
           value={emails}
           onChange={(e) => setEmails(e.target.value)}
           placeholder="alerts@example.com, team@example.com"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
         />
         <p className="mt-1 text-xs text-gray-500">Comma-separated list of email addresses</p>
       </div>
@@ -87,7 +87,7 @@ export function NotificationSettingsForm() {
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
           placeholder="https://hooks.slack.com/services/..."
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
         />
         <p className="mt-1 text-xs text-gray-500">Receives POST with JSON alert payload</p>
       </div>

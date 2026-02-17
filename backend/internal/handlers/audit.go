@@ -72,17 +72,33 @@ func GetAuditLogs(db *gorm.DB) fiber.Handler {
 		// Filter by action
 		actionFilter := c.Query("action")
 
-		// Filter by time range (in hours, default 24)
-		windowHours := 24
-		if windowParam := c.Query("window_hours"); windowParam != "" {
-			if w, err := strconv.Atoi(windowParam); err == nil && w > 0 {
-				windowHours = w
+		// Filter by time range: explicit from/to or window_hours fallback
+		var fromTime, toTime time.Time
+		if fromParam := c.Query("from"); fromParam != "" {
+			if t, err := time.Parse(time.RFC3339, fromParam); err == nil {
+				fromTime = t
 			}
 		}
-		cutoff := time.Now().Add(-time.Duration(windowHours) * time.Hour)
+		if toParam := c.Query("to"); toParam != "" {
+			if t, err := time.Parse(time.RFC3339, toParam); err == nil {
+				toTime = t
+			}
+		}
+		if fromTime.IsZero() {
+			windowHours := 24
+			if windowParam := c.Query("window_hours"); windowParam != "" {
+				if w, err := strconv.Atoi(windowParam); err == nil && w > 0 {
+					windowHours = w
+				}
+			}
+			fromTime = time.Now().Add(-time.Duration(windowHours) * time.Hour)
+		}
 
 		// Build query
-		query := db.Preload("User").Where("org_id = ? AND created_at >= ?", orgID, cutoff)
+		query := db.Preload("User").Where("org_id = ? AND created_at >= ?", orgID, fromTime)
+		if !toTime.IsZero() {
+			query = query.Where("created_at <= ?", toTime)
+		}
 
 		if actionFilter != "" {
 			query = query.Where("action = ?", actionFilter)

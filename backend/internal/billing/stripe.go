@@ -9,11 +9,11 @@ import (
     "strconv"
     "time"
     "github.com/oFuterman/light-house/internal/models"
-    "github.com/stripe/stripe-go/v76"
-    "github.com/stripe/stripe-go/v76/billingportal/session"
-    checkoutsession "github.com/stripe/stripe-go/v76/checkout/session"
-    "github.com/stripe/stripe-go/v76/customer"
-    "github.com/stripe/stripe-go/v76/webhook"
+    "github.com/stripe/stripe-go/v84"
+    "github.com/stripe/stripe-go/v84/billingportal/session"
+    checkoutsession "github.com/stripe/stripe-go/v84/checkout/session"
+    "github.com/stripe/stripe-go/v84/customer"
+    "github.com/stripe/stripe-go/v84/webhook"
     "gorm.io/gorm"
 )
 
@@ -214,13 +214,14 @@ func handlePaymentFailed(db *gorm.DB, event stripe.Event) error {
     if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
         return err
     }
-    if invoice.Subscription == nil {
+    if invoice.Parent == nil || invoice.Parent.SubscriptionDetails == nil || invoice.Parent.SubscriptionDetails.Subscription == nil {
         return nil // Not a subscription invoice
     }
+    sub := invoice.Parent.SubscriptionDetails.Subscription
     // Find org by subscription ID
     var org models.Organization
-    if err := db.Where("stripe_subscription_id = ?", invoice.Subscription.ID).First(&org).Error; err != nil {
-        log.Printf("[Stripe] Could not find org for failed payment: subscription %s", invoice.Subscription.ID)
+    if err := db.Where("stripe_subscription_id = ?", sub.ID).First(&org).Error; err != nil {
+        log.Printf("[Stripe] Could not find org for failed payment: subscription %s", sub.ID)
         return nil
     }
     // Update status to past_due - user still has access during grace period
@@ -236,12 +237,13 @@ func handleInvoicePaid(db *gorm.DB, event stripe.Event) error {
     if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
         return err
     }
-    if invoice.Subscription == nil {
+    if invoice.Parent == nil || invoice.Parent.SubscriptionDetails == nil || invoice.Parent.SubscriptionDetails.Subscription == nil {
         return nil
     }
+    sub := invoice.Parent.SubscriptionDetails.Subscription
     // Find org by subscription ID
     var org models.Organization
-    if err := db.Where("stripe_subscription_id = ?", invoice.Subscription.ID).First(&org).Error; err != nil {
+    if err := db.Where("stripe_subscription_id = ?", sub.ID).First(&org).Error; err != nil {
         return nil
     }
     // Clear past_due status if payment succeeded
@@ -277,9 +279,9 @@ func updateOrgFromSubscription(db *gorm.DB, sub *stripe.Subscription) error {
         "stripe_subscription_status": string(sub.Status),
         "cancel_at_period_end":       sub.CancelAtPeriodEnd,
     }
-    // Update period end
-    if sub.CurrentPeriodEnd > 0 {
-        periodEnd := time.Unix(sub.CurrentPeriodEnd, 0)
+    // Update period end (moved from Subscription to SubscriptionItem in API v2025-11-17)
+    if len(sub.Items.Data) > 0 && sub.Items.Data[0].CurrentPeriodEnd > 0 {
+        periodEnd := time.Unix(sub.Items.Data[0].CurrentPeriodEnd, 0)
         updates["current_period_end"] = periodEnd
     }
     // Only update plan if subscription is active or trialing

@@ -112,7 +112,7 @@ function PlanCard({
     isLoading: boolean;
 }) {
     const isCurrent = plan.is_current;
-    const isDowngrade = plan.price_cents < billing.plan_config.MonthlyPriceCents;
+    const isUpgrade = plan.price_cents > billing.plan_config.MonthlyPriceCents;
     const features = PLAN_FEATURES[plan.id as Plan] || [];
 
     return (
@@ -144,21 +144,14 @@ function PlanCard({
                     </li>
                 ))}
             </ul>
-            {!isCurrent && plan.price_cents > 0 && (
+            {!isCurrent && isUpgrade && (
                 <button
                     onClick={() => onUpgrade(plan.id as Plan)}
-                    disabled={isLoading || isDowngrade}
-                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                        isDowngrade
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
-                            : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+                    disabled={isLoading}
+                    className="w-full py-2 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
                 >
-                    {isLoading ? "Loading..." : isDowngrade ? "Manage in Portal" : "Upgrade"}
+                    {isLoading ? "Loading..." : "Upgrade"}
                 </button>
-            )}
-            {!isCurrent && plan.price_cents === 0 && (
-                <div className="text-center text-sm text-gray-500 dark:text-gray-400">Downgrade via Billing Portal</div>
             )}
         </div>
     );

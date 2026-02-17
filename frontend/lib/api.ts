@@ -592,11 +592,13 @@ export const api = {
     }),
 
   // Audit Logs
-  getAuditLogs: (params?: { limit?: number; offset?: number; action?: string; window_hours?: number }) => {
+  getAuditLogs: (params?: { limit?: number; offset?: number; action?: string; from?: string; to?: string; window_hours?: number }) => {
     const searchParams = new URLSearchParams();
     if (params?.limit) searchParams.set("limit", String(params.limit));
     if (params?.offset) searchParams.set("offset", String(params.offset));
     if (params?.action) searchParams.set("action", params.action);
+    if (params?.from) searchParams.set("from", params.from);
+    if (params?.to) searchParams.set("to", params.to);
     if (params?.window_hours) searchParams.set("window_hours", String(params.window_hours));
     const query = searchParams.toString();
     return request<{ audit_logs: AuditLog[]; total: number; limit: number; offset: number }>(

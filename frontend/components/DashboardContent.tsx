@@ -91,12 +91,6 @@ export function DashboardContent() {
                         intervalSeconds={30}
                     />
                     <Link
-                        href={`${basePath}/settings`}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                        Settings
-                    </Link>
-                    <Link
                         href={`${basePath}/checks/new`}
                         className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
                     >

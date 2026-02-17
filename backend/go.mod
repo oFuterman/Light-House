@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
-	github.com/stripe/stripe-go/v76 v76.25.0
+	github.com/stripe/stripe-go/v84 v84.3.0
 	golang.org/x/crypto v0.27.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12
