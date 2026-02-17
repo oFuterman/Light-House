@@ -335,6 +335,8 @@ export interface BillingResponse {
   subscription_status?: string;
   current_period_end?: string;
   cancel_at_period_end: boolean;
+  is_trialing: boolean;
+  trial_end_at?: string;
   available_plans: PlanInfo[];
 }
 

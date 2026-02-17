@@ -16,6 +16,8 @@ type BillingResponse struct {
     SubscriptionStatus *string            `json:"subscription_status,omitempty"`
     CurrentPeriodEnd   *string            `json:"current_period_end,omitempty"`
     CancelAtPeriodEnd  bool               `json:"cancel_at_period_end"`
+    IsTrialing         bool               `json:"is_trialing"`
+    TrialEndAt         *string            `json:"trial_end_at,omitempty"`
     AvailablePlans     []PlanInfo         `json:"available_plans"`
 }
 
@@ -67,6 +69,11 @@ func GetBilling(db *gorm.DB) fiber.Handler {
         if org.CurrentPeriodEnd != nil {
             formatted := org.CurrentPeriodEnd.Format("2006-01-02T15:04:05Z")
             resp.CurrentPeriodEnd = &formatted
+        }
+        resp.IsTrialing = org.IsTrialing
+        if org.TrialEndAt != nil {
+            formatted := org.TrialEndAt.Format("2006-01-02T15:04:05Z")
+            resp.TrialEndAt = &formatted
         }
         return c.JSON(resp)
     }
