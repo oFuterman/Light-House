@@ -52,7 +52,7 @@ export function CheckResultsTab({ checkId }: CheckResultsTabProps) {
       <CheckResultsFilterBar onChange={handleFilterChange} isLoading={isLoading} />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12 text-gray-500">
+        <div className="flex items-center justify-center py-12 text-gray-500 dark:text-gray-400">
           <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -68,8 +68,8 @@ export function CheckResultsTab({ checkId }: CheckResultsTabProps) {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">No results found</p>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">No results found</p>
+              <p className="text-sm text-gray-600 mt-1 dark:text-gray-400">
                 No check results match the current filters. Try adjusting your filters or time range.
               </p>
             </div>
@@ -77,28 +77,28 @@ export function CheckResultsTab({ checkId }: CheckResultsTabProps) {
         </div>
       ) : (
         <>
-          <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-200 bg-white">
+          <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-200 bg-white dark:text-gray-400 dark:border-gray-700 dark:bg-gray-800">
             Showing {results.length} of {total} results
           </div>
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
               <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Time</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Response Time</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Error</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">Time</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">Status</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">Response Time</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400">Error</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {results.map((result) => (
-                <tr key={result.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                <tr key={result.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                     {new Date(result.created_at).toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={result.status_code} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                     <span
                       className={`${
                         result.response_time_ms > 500

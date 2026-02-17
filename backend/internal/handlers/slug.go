@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/oFuterman/light-house/internal/utils"
 	"gorm.io/gorm"
@@ -54,6 +56,38 @@ type CheckSlugResponse struct {
 	Available bool   `json:"available"`
 	Valid     bool   `json:"valid"`
 	Error     string `json:"error,omitempty"`
+}
+
+// CheckOrgNameRequest is the request body for checking org name availability
+type CheckOrgNameRequest struct {
+	Name string `json:"name"`
+}
+
+// CheckOrgName checks if an organization name is available (case-insensitive)
+// POST /api/v1/auth/check-name
+func CheckOrgName(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req CheckOrgNameRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid request body",
+			})
+		}
+
+		name := strings.TrimSpace(req.Name)
+		if len(name) < 2 || len(name) > 100 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "name must be between 2 and 100 characters",
+			})
+		}
+
+		available := utils.IsOrgNameAvailable(db, name)
+
+		return c.JSON(fiber.Map{
+			"name":      name,
+			"available": available,
+		})
+	}
 }
 
 // CheckSlug validates and checks availability of a slug

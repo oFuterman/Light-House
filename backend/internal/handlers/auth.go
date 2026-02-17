@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/lib/pq"
 	"github.com/oFuterman/light-house/internal/models"
 	"github.com/oFuterman/light-house/internal/utils"
 	"golang.org/x/crypto/bcrypt"
@@ -104,6 +105,13 @@ func Signup(db *gorm.DB) fiber.Handler {
 			})
 		}
 
+		// Check if org name is already taken (case-insensitive)
+		if !utils.IsOrgNameAvailable(db, req.OrgName) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": "an organization with this name already exists",
+			})
+		}
+
 		// Hash password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
@@ -179,6 +187,16 @@ func Signup(db *gorm.DB) fiber.Handler {
 		})
 
 		if err != nil {
+			if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" {
+				if strings.Contains(pgErr.Constraint, "name") {
+					return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+						"error": "an organization with this name already exists",
+					})
+				}
+				return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+					"error": "this URL is already taken",
+				})
+			}
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "failed to create account",
 			})

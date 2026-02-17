@@ -118,7 +118,7 @@ export function AuditLogTab() {
   return (
     <div className="p-6">
       <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
-      <p className="text-sm text-gray-600 mb-4">
+      <p className="text-sm text-gray-600 mb-4 dark:text-gray-400">
         View security and activity events for your organization.
       </p>
 
@@ -202,7 +202,7 @@ export function AuditLogTab() {
                         <td className="py-2 px-3 text-gray-700 truncate dark:text-gray-300">
                           {log.user_email || <span className="text-gray-400">System</span>}
                         </td>
-                        <td className="py-2 px-3 text-gray-400 font-mono text-xs">
+                        <td className="py-2 px-3 text-gray-400 font-mono text-xs dark:text-gray-500">
                           {log.ip_address || "-"}
                         </td>
                         <td className="py-2 px-3 text-gray-500 truncate dark:text-gray-400">
@@ -270,7 +270,7 @@ export function AuditLogTab() {
             </table>
 
           {logs.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No audit logs found.</p>
+            <p className="text-center text-gray-500 py-8 dark:text-gray-400">No audit logs found.</p>
           )}
 
           {/* Pagination */}

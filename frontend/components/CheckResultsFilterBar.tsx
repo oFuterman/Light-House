@@ -87,10 +87,10 @@ export function CheckResultsFilterBar({ onChange, isLoading }: CheckResultsFilte
   }, [timeRangeHours, statusFilter, latencyFilter, onChange]);
 
   return (
-    <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 border-b border-gray-200">
+    <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
       {/* Time Range */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">Time:</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">Time:</span>
         <div className="inline-flex rounded-md shadow-sm">
           {TIME_RANGE_OPTIONS.map((option, index) => (
             <button
@@ -108,7 +108,7 @@ export function CheckResultsFilterBar({ onChange, isLoading }: CheckResultsFilte
                 ${
                   timeRangeHours === option.hours
                     ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                 }
               `}
             >
@@ -120,7 +120,7 @@ export function CheckResultsFilterBar({ onChange, isLoading }: CheckResultsFilte
 
       {/* Status Filter */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">Status:</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
         <div className="inline-flex rounded-md shadow-sm">
           {STATUS_OPTIONS.map((option, index) => (
             <button
@@ -138,7 +138,7 @@ export function CheckResultsFilterBar({ onChange, isLoading }: CheckResultsFilte
                 ${
                   statusFilter === option.value
                     ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                 }
               `}
             >
@@ -150,7 +150,7 @@ export function CheckResultsFilterBar({ onChange, isLoading }: CheckResultsFilte
 
       {/* Latency Filter */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">Latency:</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400">Latency:</span>
         <div className="inline-flex rounded-md shadow-sm">
           {LATENCY_OPTIONS.map((option, index) => (
             <button
@@ -168,7 +168,7 @@ export function CheckResultsFilterBar({ onChange, isLoading }: CheckResultsFilte
                 ${
                   latencyFilter === option.value
                     ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                 }
               `}
             >

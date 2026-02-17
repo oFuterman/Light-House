@@ -89,7 +89,7 @@ export function APIKeysTab() {
       <div className="p-6">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-gray-100 rounded" />
+            <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded" />
           ))}
         </div>
       </div>
@@ -101,7 +101,7 @@ export function APIKeysTab() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">API Keys</h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Manage API keys for programmatic access to your organization.
           </p>
         </div>
@@ -116,7 +116,7 @@ export function APIKeysTab() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm dark:bg-red-900/30 dark:text-red-400">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">
             Dismiss
@@ -125,12 +125,12 @@ export function APIKeysTab() {
       )}
 
       {newKey && (
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800 font-medium mb-2">
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/30 dark:border-yellow-800">
+          <p className="text-sm text-yellow-800 font-medium mb-2 dark:text-yellow-300">
             API key created! Copy it now - you won&apos;t be able to see it again.
           </p>
           <div className="flex items-center space-x-2">
-            <code className="flex-1 text-sm bg-white border border-yellow-200 rounded px-3 py-2 font-mono break-all">
+            <code className="flex-1 text-sm bg-white border border-yellow-200 rounded px-3 py-2 font-mono break-all text-gray-900 dark:bg-gray-800 dark:border-yellow-800 dark:text-gray-100">
               {newKey}
             </code>
             <button
@@ -141,7 +141,7 @@ export function APIKeysTab() {
             </button>
             <button
               onClick={() => setNewKey(null)}
-              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
             >
               Dismiss
             </button>
@@ -188,7 +188,7 @@ export function APIKeysTab() {
                   />
                   <div>
                     <span className="font-medium">{scope.label}</span>
-                    <p className="text-xs text-gray-500">{scope.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{scope.description}</p>
                   </div>
                 </label>
               ))}
@@ -209,14 +209,14 @@ export function APIKeysTab() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Name</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Key Prefix</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Permissions</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Last Used</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Created</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Key Prefix</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Permissions</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Last Used</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created</th>
               {canManageSettings && (
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
               )}
             </tr>
           </thead>
@@ -225,10 +225,10 @@ export function APIKeysTab() {
               const isActionLoading = actionLoading === apiKey.id;
 
               return (
-                <tr key={apiKey.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={apiKey.id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                   <td className="py-3 px-4 text-sm font-medium">{apiKey.name}</td>
                   <td className="py-3 px-4">
-                    <code className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                    <code className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded dark:text-gray-300 dark:bg-gray-700">
                       {apiKey.prefix}...
                     </code>
                   </td>
@@ -237,24 +237,24 @@ export function APIKeysTab() {
                       {apiKey.scopes.slice(0, 3).map((scope) => (
                         <span
                           key={scope}
-                          className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded"
+                          className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded dark:bg-blue-900/40 dark:text-blue-400"
                         >
                           {getScopeLabel(scope)}
                         </span>
                       ))}
                       {apiKey.scopes.length > 3 && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           +{apiKey.scopes.length - 3} more
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">
+                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                     {apiKey.last_used_at
                       ? new Date(apiKey.last_used_at).toLocaleDateString()
                       : "Never"}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">
+                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                     {new Date(apiKey.created_at).toLocaleDateString()}
                     {apiKey.created_by && (
                       <span className="block text-xs text-gray-400">by {apiKey.created_by}</span>
@@ -282,7 +282,7 @@ export function APIKeysTab() {
       </div>
 
       {apiKeys.length === 0 && (
-        <p className="text-center text-gray-500 py-8">No API keys yet.</p>
+        <p className="text-center text-gray-500 py-8 dark:text-gray-400">No API keys yet.</p>
       )}
     </div>
   );

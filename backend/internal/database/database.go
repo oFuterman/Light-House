@@ -3,6 +3,7 @@ package database
 import (
     "fmt"
     "log"
+    "strings"
 
     "github.com/oFuterman/light-house/internal/config"
     "github.com/oFuterman/light-house/internal/models"
@@ -59,6 +60,9 @@ func Migrate(db *gorm.DB) error {
     if err := migrateOrganizationSlugs(db); err != nil {
         log.Printf("Warning: org slug migration may have failed: %v", err)
     }
+    if err := migrateOrgNameUniqueness(db); err != nil {
+        log.Printf("Warning: org name uniqueness migration may have failed: %v", err)
+    }
     return nil
 }
 
@@ -106,6 +110,61 @@ func createObservabilityIndexes(db *gorm.DB) error {
         }
     }
     return nil
+}
+
+// migrateOrgNameUniqueness deduplicates existing org names and creates a
+// case-insensitive unique index. Runs in a transaction for atomicity.
+func migrateOrgNameUniqueness(db *gorm.DB) error {
+    return db.Transaction(func(tx *gorm.DB) error {
+        // Find duplicate org names (case-insensitive) among non-deleted orgs
+        type dupRow struct {
+            LowerName string
+            Ids       string
+        }
+        var dups []dupRow
+        if err := tx.Raw(`
+            SELECT LOWER(name) as lower_name, array_agg(id ORDER BY id)::text as ids
+            FROM organizations
+            WHERE deleted_at IS NULL
+            GROUP BY LOWER(name)
+            HAVING COUNT(*) > 1
+        `).Scan(&dups).Error; err != nil {
+            return fmt.Errorf("failed to find duplicate org names: %w", err)
+        }
+
+        // Deduplicate: keep oldest org's name, append (2), (3) to others
+        for _, dup := range dups {
+            // Parse the PostgreSQL array string "{1,5,12}" into IDs
+            trimmed := strings.Trim(dup.Ids, "{}")
+            parts := strings.Split(trimmed, ",")
+
+            for i, idStr := range parts {
+                if i == 0 {
+                    continue // Keep the oldest org's name as-is
+                }
+                idStr = strings.TrimSpace(idStr)
+                suffix := fmt.Sprintf(" (%d)", i+1)
+                if err := tx.Exec(
+                    `UPDATE organizations SET name = name || ? WHERE id = ?`,
+                    suffix, idStr,
+                ).Error; err != nil {
+                    return fmt.Errorf("failed to rename duplicate org %s: %w", idStr, err)
+                }
+                log.Printf("  Renamed duplicate org %s: appended '%s'", idStr, suffix)
+            }
+        }
+
+        // Create partial unique index (case-insensitive, excludes soft-deleted)
+        if err := tx.Exec(`
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_name_unique
+            ON organizations (LOWER(name))
+            WHERE deleted_at IS NULL
+        `).Error; err != nil {
+            return fmt.Errorf("failed to create org name unique index: %w", err)
+        }
+
+        return nil
+    })
 }
 
 // migrateOrganizationSlugs generates slugs for existing orgs without them

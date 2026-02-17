@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/auth";
 
 export function NotificationSettingsForm() {
+  const { canManageSettings } = useAuth();
   const [emails, setEmails] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export function NotificationSettingsForm() {
   };
 
   if (loading) {
-    return <div className="animate-pulse text-gray-500">Loading settings...</div>;
+    return <div className="animate-pulse text-gray-500 dark:text-gray-400">Loading settings...</div>;
   }
 
   return (
@@ -57,7 +59,7 @@ export function NotificationSettingsForm() {
       {message && (
         <div
           className={`p-3 rounded-lg text-sm ${
-            message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+            message.type === "success" ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
           }`}
         >
           {message.text}
@@ -72,10 +74,11 @@ export function NotificationSettingsForm() {
           type="text"
           value={emails}
           onChange={(e) => setEmails(e.target.value)}
+          disabled={!canManageSettings}
           placeholder="alerts@example.com, team@example.com"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500 disabled:opacity-60 disabled:cursor-not-allowed"
         />
-        <p className="mt-1 text-xs text-gray-500">Comma-separated list of email addresses</p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Comma-separated list of email addresses</p>
       </div>
       <div>
         <label htmlFor="webhook" className="block text-sm font-medium mb-1">
@@ -86,18 +89,21 @@ export function NotificationSettingsForm() {
           type="url"
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
+          disabled={!canManageSettings}
           placeholder="https://hooks.slack.com/services/..."
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500 disabled:opacity-60 disabled:cursor-not-allowed"
         />
-        <p className="mt-1 text-xs text-gray-500">Receives POST with JSON alert payload</p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Receives POST with JSON alert payload</p>
       </div>
-      <button
-        type="submit"
-        disabled={saving}
-        className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
-      >
-        {saving ? "Saving..." : "Save Settings"}
-      </button>
+      {canManageSettings && (
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+        >
+          {saving ? "Saving..." : "Save Settings"}
+        </button>
+      )}
     </form>
   );
 }

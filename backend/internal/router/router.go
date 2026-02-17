@@ -45,6 +45,7 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	// Slug suggestion and validation (public - used during signup)
 	auth.Post("/suggest-slug", handlers.SuggestSlug(db))
 	auth.Post("/check-slug", handlers.CheckSlug(db))
+	auth.Post("/check-name", handlers.CheckOrgName(db))
 
 	// Invite routes (public - for accepting invites)
 	v1.Get("/invites/:token", handlers.GetInviteInfo(db))

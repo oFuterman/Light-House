@@ -423,6 +423,19 @@ export const api = {
       return res.json() as Promise<SlugCheckResponse>;
     }),
 
+  checkOrgName: (name: string) =>
+    fetch(`${API_URL}/auth/check-name`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || "Failed to check name");
+      }
+      return res.json() as Promise<{ name: string; available: boolean }>;
+    }),
+
   getMe: () => request<User>("/me"),
 
   logout: () =>

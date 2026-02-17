@@ -10,10 +10,10 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
 ];
 
 const STATUS_STYLES: Record<InviteStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  accepted: "bg-green-100 text-green-700",
-  expired: "bg-gray-100 text-gray-500",
-  revoked: "bg-red-100 text-red-700",
+  pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400",
+  accepted: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
+  expired: "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
+  revoked: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
 };
 
 export function InvitesTab() {
@@ -107,7 +107,7 @@ export function InvitesTab() {
       <div className="p-6">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-gray-100 rounded" />
+            <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded" />
           ))}
         </div>
       </div>
@@ -119,7 +119,7 @@ export function InvitesTab() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">Invitations</h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Invite new members to your organization.
           </p>
         </div>
@@ -132,7 +132,7 @@ export function InvitesTab() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm dark:bg-red-900/30 dark:text-red-400">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">
             Dismiss
@@ -141,24 +141,24 @@ export function InvitesTab() {
       )}
 
       {lastInviteLink && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800 font-medium mb-2">Invite created successfully!</p>
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/30 dark:border-green-800">
+          <p className="text-sm text-green-800 font-medium mb-2 dark:text-green-300">Invite created successfully!</p>
           <div className="flex items-center space-x-2">
             <input
               type="text"
               value={lastInviteLink}
               readOnly
-              className="flex-1 text-sm bg-white border border-green-200 rounded px-2 py-1"
+              className="flex-1 text-sm bg-white border border-green-200 rounded px-2 py-1 text-gray-900 dark:bg-gray-800 dark:border-green-800 dark:text-gray-100"
             />
             <button
               onClick={copyInviteLink}
-              className="text-sm text-green-700 hover:text-green-900 underline"
+              className="text-sm text-green-700 hover:text-green-900 underline dark:text-green-400 dark:hover:text-green-300"
             >
               Copy
             </button>
             <button
               onClick={() => setLastInviteLink(null)}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               Dismiss
             </button>
@@ -215,13 +215,13 @@ export function InvitesTab() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Role</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Invited By</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Expires</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Email</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Role</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Invited By</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Expires</th>
+              <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -230,7 +230,7 @@ export function InvitesTab() {
               const isPending = invite.status === "pending";
 
               return (
-                <tr key={invite.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={invite.id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                   <td className="py-3 px-4 text-sm">{invite.email}</td>
                   <td className="py-3 px-4">
                     <span className="text-sm capitalize">{invite.role}</span>
@@ -240,8 +240,8 @@ export function InvitesTab() {
                       {invite.status}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">{invite.invited_by}</td>
-                  <td className="py-3 px-4 text-sm text-gray-500">
+                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">{invite.invited_by}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                     {new Date(invite.expires_at).toLocaleDateString()}
                   </td>
                   <td className="py-3 px-4 text-right">
@@ -274,7 +274,7 @@ export function InvitesTab() {
       </div>
 
       {invites.length === 0 && (
-        <p className="text-center text-gray-500 py-8">No invitations yet.</p>
+        <p className="text-center text-gray-500 py-8 dark:text-gray-400">No invitations yet.</p>
       )}
     </div>
   );

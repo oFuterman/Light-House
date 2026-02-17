@@ -68,6 +68,7 @@ func GetNotificationSettings(db *gorm.DB) fiber.Handler {
 func UpdateNotificationSettings(db *gorm.DB) fiber.Handler {
     return func(c *fiber.Ctx) error {
         orgID := c.Locals("orgID").(uint)
+        userID := c.Locals("userID").(uint)
         var req NotificationSettingsRequest
         if err := c.BodyParser(&req); err != nil {
             return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -121,6 +122,12 @@ func UpdateNotificationSettings(db *gorm.DB) fiber.Handler {
                 })
             }
         }
+
+        logAuditEvent(db, orgID, &userID, models.AuditActionSettingsUpdated, "notification_settings", &settings.ID, models.JSONMap{
+            "email_recipients": validatedEmails,
+            "webhook_url":     req.WebhookURL,
+        }, c.IP(), c.Get("User-Agent"))
+
         return c.JSON(NotificationSettingsResponse{
             ID:              settings.ID,
             EmailRecipients: settings.EmailRecipients,

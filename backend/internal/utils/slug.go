@@ -131,6 +131,14 @@ func isSlugAvailable(db *gorm.DB, slug string, excludeOrgID *uint) bool {
 	return IsSlugAvailable(db, slug, excludeOrgID)
 }
 
+// IsOrgNameAvailable checks if an org name is available (case-insensitive)
+// GORM auto-adds WHERE deleted_at IS NULL, so soft-deleted orgs are excluded
+func IsOrgNameAvailable(db *gorm.DB, name string) bool {
+	var count int64
+	db.Model(&models.Organization{}).Where("LOWER(name) = LOWER(?)", name).Count(&count)
+	return count == 0
+}
+
 // SlugSuggestion represents a suggested slug with availability status
 type SlugSuggestion struct {
 	Slug      string `json:"slug"`

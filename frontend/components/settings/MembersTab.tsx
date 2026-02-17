@@ -24,7 +24,7 @@ function RoleInfoTooltip() {
         type="button"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setPosition(null)}
-        className="text-gray-400 hover:text-gray-600 cursor-help"
+        className="text-gray-400 hover:text-gray-600 cursor-help dark:text-gray-500 dark:hover:text-gray-300"
       >
         <svg className="w-4 h-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -141,7 +141,7 @@ export function MembersTab() {
       <div className="p-6">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-gray-100 rounded" />
+            <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded" />
           ))}
         </div>
       </div>
@@ -151,12 +151,12 @@ export function MembersTab() {
   return (
     <div className="p-6">
       <h2 className="text-lg font-semibold mb-4">Organization Members</h2>
-      <p className="text-sm text-gray-600 mb-4">
+      <p className="text-sm text-gray-600 mb-4 dark:text-gray-400">
         Manage team members and their roles within your organization.
       </p>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+        <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm dark:bg-red-900/30 dark:text-red-400">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">
             Dismiss
@@ -167,15 +167,15 @@ export function MembersTab() {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700">
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Email</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">
                 Role
                 <RoleInfoTooltip />
               </th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Joined</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Joined</th>
               {canManageMembers && (
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
               )}
             </tr>
           </thead>
@@ -186,12 +186,12 @@ export function MembersTab() {
               const isActionLoading = actionLoading === member.id;
 
               return (
-                <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                   <td className="py-3 px-4">
                     <div className="flex items-center">
                       <span className="text-sm">{member.email}</span>
                       {isCurrentUser && (
-                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded dark:bg-blue-900/40 dark:text-blue-400">
                           You
                         </span>
                       )}
@@ -203,7 +203,7 @@ export function MembersTab() {
                         value={member.role}
                         onChange={(e) => handleRoleChange(member.id, e.target.value as Role)}
                         disabled={isActionLoading}
-                        className="text-sm border border-gray-300 rounded px-2 py-1"
+                        className="text-sm border border-gray-300 rounded px-2 py-1 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                         autoFocus
                         onBlur={() => setEditingId(null)}
                       >
@@ -216,16 +216,16 @@ export function MembersTab() {
                     ) : (
                       <span className={`text-sm capitalize px-2 py-0.5 rounded ${
                         member.role === "owner"
-                          ? "bg-purple-100 text-purple-700"
+                          ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400"
                           : member.role === "admin"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                          : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                       }`}>
                         {member.role}
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">
+                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                     {new Date(member.created_at).toLocaleDateString()}
                   </td>
                   {canManageMembers && (
@@ -275,7 +275,7 @@ export function MembersTab() {
       </div>
 
       {members.length === 0 && (
-        <p className="text-center text-gray-500 py-8">No members found.</p>
+        <p className="text-center text-gray-500 py-8 dark:text-gray-400">No members found.</p>
       )}
     </div>
   );

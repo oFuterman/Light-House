@@ -12,13 +12,13 @@ export function FilterChip({ filter, onRemove }: FilterChipProps) {
   const displayField = filter.field === "service_name" ? "service" : filter.field;
 
   return (
-    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 gap-1">
+    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 gap-1 dark:bg-blue-900/40 dark:text-blue-300">
       <span className="font-medium">{displayField}</span>
-      <span className="text-blue-600">:</span>
+      <span className="text-blue-600 dark:text-blue-400">:</span>
       <span>{filter.value}</span>
       <button
         onClick={onRemove}
-        className="ml-1 p-0.5 rounded-full hover:bg-blue-200 transition-colors"
+        className="ml-1 p-0.5 rounded-full hover:bg-blue-200 transition-colors dark:hover:bg-blue-800"
         aria-label={`Remove ${displayField}:${filter.value} filter`}
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

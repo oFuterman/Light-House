@@ -54,7 +54,7 @@ export function CheckResponseTimeChart({
     if (!active || !payload?.length) return null;
     const data = payload[0].payload;
     return (
-      <div className="bg-white border rounded shadow-lg p-3 text-sm">
+      <div className="bg-white border rounded shadow-lg p-3 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
         <p className="font-medium">{data.formattedTime}</p>
         <p>Response: {data.responseTime}ms</p>
         <p className={data.isSuccess ? "text-green-600" : "text-red-600"}>
@@ -66,7 +66,7 @@ export function CheckResponseTimeChart({
 
   if (results.length === 0) {
     return (
-      <div className="flex items-center justify-center text-gray-500" style={{ height }}>
+      <div className="flex items-center justify-center text-gray-500 dark:text-gray-400" style={{ height }}>
         No data available for this time period
       </div>
     );

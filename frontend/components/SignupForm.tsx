@@ -20,6 +20,10 @@ export function SignupForm() {
     const [selectedSlug, setSelectedSlug] = useState("");
     const [customSlug, setCustomSlug] = useState("");
 
+    // Org name check state
+    const [nameAvailable, setNameAvailable] = useState<boolean | null>(null);
+    const [isCheckingName, setIsCheckingName] = useState(false);
+
     // Slug suggestions state
     const [primarySlug, setPrimarySlug] = useState<SlugSuggestion | null>(null);
     const [alternatives, setAlternatives] = useState<SlugSuggestion[]>([]);
@@ -52,6 +56,29 @@ export function SignupForm() {
 
     return () => clearTimeout(timer);
   }, [customSlug, selectedSlug]);
+
+  // Debounced org name availability check
+  useEffect(() => {
+    const trimmed = orgName.trim();
+    if (trimmed.length < 2) {
+      setNameAvailable(null);
+      return;
+    }
+
+    setIsCheckingName(true);
+    const timer = setTimeout(async () => {
+      try {
+        const result = await api.checkOrgName(trimmed);
+        setNameAvailable(result.available);
+      } catch {
+        setNameAvailable(null);
+      } finally {
+        setIsCheckingName(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [orgName]);
 
   // Fetch slug suggestions when moving to step 2
   const fetchSlugSuggestions = useCallback(async () => {
@@ -96,6 +123,11 @@ export function SignupForm() {
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (nameAvailable === false) {
+      setError("An organization with this name already exists");
       return;
     }
 
@@ -206,6 +238,17 @@ export function SignupForm() {
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
                             required
                         />
+                        {orgName.trim().length >= 2 && (
+                            <div className="mt-1 text-sm">
+                                {isCheckingName ? (
+                                    <span className="text-gray-500 dark:text-gray-400">Checking availability...</span>
+                                ) : nameAvailable === true ? (
+                                    <span className="text-green-600 dark:text-green-400">Name is available</span>
+                                ) : nameAvailable === false ? (
+                                    <span className="text-red-600 dark:text-red-400">Name already taken</span>
+                                ) : null}
+                            </div>
+                        )}
                     </div>
 
                     <div>

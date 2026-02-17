@@ -15,7 +15,7 @@ type SettingsTab = "billing" | "notifications" | "members" | "invites" | "api-ke
 
 const TABS: { id: SettingsTab; label: string; adminOnly?: boolean }[] = [
   { id: "billing", label: "Billing" },
-  { id: "notifications", label: "Notifications" },
+  { id: "notifications", label: "Notifications", adminOnly: true },
   { id: "members", label: "Members" },
   { id: "invites", label: "Invites", adminOnly: true },
   { id: "api-keys", label: "API Keys" },
@@ -30,10 +30,10 @@ export function SettingsContent() {
   // Handle tab from URL (e.g., after Stripe redirect)
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && TABS.some((t) => t.id === tab)) {
+    if (tab && TABS.some((t) => t.id === tab && (!t.adminOnly || canManageSettings))) {
       setActiveTab(tab as SettingsTab);
     }
-  }, [searchParams]);
+  }, [searchParams, canManageSettings]);
 
   const visibleTabs = TABS.filter((tab) => !tab.adminOnly || canManageSettings);
 
@@ -89,7 +89,7 @@ export function SettingsContent() {
                     </div>
                 )}
 
-                {activeTab === "notifications" && (
+                {activeTab === "notifications" && canManageSettings && (
                     <div className="p-6">
                         <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Notification Settings</h2>
                         <p className="text-sm text-gray-600 mb-4 dark:text-gray-400">
