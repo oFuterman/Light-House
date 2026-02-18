@@ -101,7 +101,8 @@ func CreateCheck(db *gorm.DB) fiber.Handler {
 				"error": "failed to check limits",
 			})
 		}
-		if allowed, msg := billing.CanCreateCheck(org.Plan, currentCount); !allowed {
+		plan := billing.EffectivePlan(&org)
+		if allowed, msg := billing.CanCreateCheck(plan, currentCount); !allowed {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error":       msg,
 				"limit_type":  "checks",
@@ -110,10 +111,9 @@ func CreateCheck(db *gorm.DB) fiber.Handler {
 			})
 		}
 
-		// Validate interval against plan minimum
-		planConfig := models.GetPlanConfig(org.Plan)
-		if req.IntervalSeconds < planConfig.CheckIntervalMinSeconds {
-			req.IntervalSeconds = planConfig.CheckIntervalMinSeconds
+		// Validate interval against plan minimum — reject if below allowed
+		if allowed, msg := billing.CanUseCheckInterval(plan, req.IntervalSeconds); !allowed {
+			return c.Status(fiber.StatusForbidden).JSON(billing.EntitlementError(msg, "check_interval"))
 		}
 
 		check := models.Check{
@@ -222,11 +222,18 @@ func UpdateCheck(db *gorm.DB) fiber.Handler {
 		}
 
 		if req.IntervalSeconds != nil {
-			interval := *req.IntervalSeconds
-			if interval < 60 {
-				interval = 60
+			// Load org to get plan for interval validation
+			var org models.Organization
+			if err := db.First(&org, orgID).Error; err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "failed to load organization",
+				})
 			}
-			check.IntervalSeconds = interval
+			plan := billing.EffectivePlan(&org)
+			if allowed, msg := billing.CanUseCheckInterval(plan, *req.IntervalSeconds); !allowed {
+				return c.Status(fiber.StatusForbidden).JSON(billing.EntitlementError(msg, "check_interval"))
+			}
+			check.IntervalSeconds = *req.IntervalSeconds
 		}
 
 		if req.IsActive != nil {

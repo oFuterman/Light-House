@@ -123,7 +123,8 @@ func IngestLog(db *gorm.DB) fiber.Handler {
 		}
 
 		// Check if we can ingest these logs
-		allowed, atWarning, message := billing.CanIngestLogs(org.Plan, currentVolume, incomingBytes)
+		plan := billing.EffectivePlan(&org)
+		allowed, atWarning, message := billing.CanIngestLogs(plan, currentVolume, incomingBytes)
 		if !allowed {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error":       message,

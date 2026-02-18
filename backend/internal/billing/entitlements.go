@@ -2,6 +2,9 @@ package billing
 
 import (
     "fmt"
+    "time"
+
+    "github.com/gofiber/fiber/v2"
     "github.com/oFuterman/light-house/internal/models"
 )
 
@@ -18,6 +21,28 @@ type EntitlementResult struct {
     WithinLimits bool               `json:"within_limits"`
     Violations   []Violation        `json:"violations,omitempty"`
     Thresholds   map[string]float64 `json:"thresholds"` // resource -> usage percentage (0.0-1.0+)
+}
+
+// EffectivePlan returns the plan to use for entitlement checks.
+// During an active trial, the org gets Team-level entitlements.
+func EffectivePlan(org *models.Organization) models.Plan {
+    if org.IsTrialing && org.TrialEndAt != nil && org.TrialEndAt.After(time.Now()) {
+        return models.PlanTeam
+    }
+    if !org.Plan.IsValid() {
+        return models.PlanFree
+    }
+    return org.Plan
+}
+
+// EntitlementError builds a standardized entitlement limit error response.
+func EntitlementError(msg, limitType string) fiber.Map {
+    return fiber.Map{
+        "error":       msg,
+        "code":        "ENTITLEMENT_LIMIT",
+        "limit_type":  limitType,
+        "upgrade_url": "/settings?tab=billing",
+    }
 }
 
 // CheckEntitlements evaluates whether an org's usage is within plan limits

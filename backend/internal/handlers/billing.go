@@ -52,16 +52,17 @@ func GetBilling(db *gorm.DB) fiber.Handler {
                 "error": "failed to load usage",
             })
         }
-        // Check entitlements
-        entitlements := billing.CheckEntitlements(org.Plan, usage)
+        // Check entitlements using effective plan (trial-aware)
+        plan := billing.EffectivePlan(&org)
+        entitlements := billing.CheckEntitlements(plan, usage)
         // Build response
         resp := BillingResponse{
             Plan:              string(org.Plan),
-            PlanConfig:        models.GetPlanConfig(org.Plan),
+            PlanConfig:        models.GetPlanConfig(plan),
             Usage:             usage,
             Entitlements:      entitlements,
             CancelAtPeriodEnd: org.CancelAtPeriodEnd,
-            AvailablePlans:    buildPlanList(org.Plan),
+            AvailablePlans:    buildPlanList(plan),
         }
         if org.StripeSubscriptionStatus != nil {
             resp.SubscriptionStatus = org.StripeSubscriptionStatus

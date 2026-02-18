@@ -114,7 +114,8 @@ func CreateAPIKey(db *gorm.DB) fiber.Handler {
 				"error": "failed to check limits",
 			})
 		}
-		if allowed, msg := billing.CanCreateAPIKey(org.Plan, currentCount); !allowed {
+		plan := billing.EffectivePlan(&org)
+		if allowed, msg := billing.CanCreateAPIKey(plan, currentCount); !allowed {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error":       msg,
 				"limit_type":  "api_keys",
