@@ -386,7 +386,7 @@ export function BillingTab() {
       {billing.is_trialing && (
         <DismissibleBanner type="info" title={`${config.Name} trial`}>
           {billing.trial_end_at ? (
-            <p>Your trial ends on {formatDate(billing.trial_end_at)}. After the trial, your organization will be downgraded to the Free plan. No data will be deleted — new resource creation will be paused until you upgrade.</p>
+            <p>Your trial ends on {formatDate(billing.trial_end_at)}. After the trial, your organization will be downgraded to the Free plan. No data will be deleted and new resource creation will be paused until you upgrade.</p>
           ) : (
             <p>You&apos;re on a trial of the {config.Name} plan. After the trial, your organization will be downgraded to the Free plan unless you subscribe.</p>
           )}
