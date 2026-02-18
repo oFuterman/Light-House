@@ -195,7 +195,7 @@ export function SignupForm() {
             >
                 <div className="flex items-center justify-between">
                     <span className="font-mono text-sm text-gray-900 dark:text-gray-100">
-                        lighthouse.io/org/<span className="font-semibold">{slug.slug}</span>
+                        lightesthouse.com/org/<span className="font-semibold">{slug.slug}</span>
                     </span>
                     {slug.available ? (
                         <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded dark:bg-green-900/30 dark:text-green-400">
@@ -349,7 +349,7 @@ export function SignupForm() {
                                 <div className="mt-3">
                                     <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 dark:border-gray-600 dark:focus-within:ring-gray-500">
                                         <span className="px-3 py-2 bg-gray-100 text-gray-500 text-sm border-r dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600">
-                                            lighthouse.io/org/
+                                            lightesthouse.com/org/
                                         </span>
                                         <input
                                             type="text"
