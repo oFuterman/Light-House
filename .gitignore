@@ -15,10 +15,11 @@ backend/server
 
 # Dependency directories
 vendor/
+node_modules/
 
-# Environment files
-.env
-.env.local
+# Environment files (all variants)
+.env*
+!.env.example
 
 # IDE
 .idea/
@@ -32,6 +33,9 @@ Thumbs.db
 
 # Private docs
 docs/roadmap.md
+
+# Cookies / auth artifacts
+cookies.txt
 
 # Local dev scripts
 local/
