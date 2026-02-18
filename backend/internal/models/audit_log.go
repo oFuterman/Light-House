@@ -37,6 +37,11 @@ const (
 
 	// Settings actions
 	AuditActionSettingsUpdated AuditAction = "settings.updated"
+
+	// Billing/trial actions
+	AuditActionTrialStarted   AuditAction = "billing.trial_started"
+	AuditActionTrialExpired   AuditAction = "billing.trial_expired"
+	AuditActionTrialConverted AuditAction = "billing.trial_converted"
 )
 
 // AuditLog records security-relevant events for compliance and debugging

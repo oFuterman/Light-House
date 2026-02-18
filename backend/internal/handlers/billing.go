@@ -1,6 +1,9 @@
 package handlers
 
 import (
+    "log"
+    "time"
+
     "github.com/gofiber/fiber/v2"
     "github.com/oFuterman/light-house/internal/billing"
     "github.com/oFuterman/light-house/internal/models"
@@ -45,6 +48,33 @@ func GetBilling(db *gorm.DB) fiber.Handler {
                 "error": "failed to load organization",
             })
         }
+        // Request-time trial auto-downgrade: if trial expired and no active paid subscription,
+        // atomically flip IsTrialing=false. The WHERE clause ensures idempotency and concurrency safety.
+        if org.IsTrialing && org.TrialEndAt != nil && org.TrialEndAt.Before(time.Now()) {
+            hasPaidSub := org.StripeSubscriptionStatus != nil &&
+                (*org.StripeSubscriptionStatus == "active" || *org.StripeSubscriptionStatus == "trialing" || *org.StripeSubscriptionStatus == "past_due")
+            if !hasPaidSub {
+                result := db.Model(&models.Organization{}).
+                    Where("id = ? AND is_trialing = ? AND trial_end_at < ?", org.ID, true, time.Now()).
+                    Updates(map[string]interface{}{
+                        "is_trialing": false,
+                        "plan":        models.PlanFree,
+                    })
+                if result.RowsAffected > 0 {
+                    log.Printf("[Trial] Auto-downgraded org %d after trial expiry", org.ID)
+                    db.Create(&models.AuditLog{
+                        OrgID:        org.ID,
+                        Action:       models.AuditActionTrialExpired,
+                        ResourceType: "organization",
+                        ResourceID:   &org.ID,
+                        Details:      models.JSONMap{"reason": "trial_expired_no_subscription"},
+                    })
+                    // Reload org to reflect the downgrade in the response
+                    db.First(&org, orgID)
+                }
+            }
+        }
+
         // Get usage snapshot
         usage, err := billing.GetUsageSnapshot(db, orgID)
         if err != nil {

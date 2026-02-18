@@ -58,8 +58,9 @@ func main() {
 	// Setup routes (pass config for JWT secret)
 	router.Setup(app, db, cfg)
 
-	// Start background worker for running checks
+	// Start background workers
 	go worker.StartCheckRunner(db)
+	go worker.StartTrialExpiryWorker(db)
 
 	// Start server
 	port := os.Getenv("PORT")

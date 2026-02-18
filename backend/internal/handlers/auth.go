@@ -164,10 +164,13 @@ func Signup(db *gorm.DB) fiber.Handler {
 		// Create organization and user in a transaction
 		var user models.User
 		var org models.Organization
+		trialEnd := time.Now().Add(14 * 24 * time.Hour)
 		err = db.Transaction(func(tx *gorm.DB) error {
 			org = models.Organization{
-				Name: req.OrgName,
-				Slug: finalSlug,
+				Name:       req.OrgName,
+				Slug:       finalSlug,
+				IsTrialing: true,
+				TrialEndAt: &trialEnd,
 			}
 			if err := tx.Create(&org).Error; err != nil {
 				return err
@@ -202,10 +205,13 @@ func Signup(db *gorm.DB) fiber.Handler {
 			})
 		}
 
-		// Log audit event for org creation
+		// Log audit events for org creation and trial start
 		logAuditEvent(db, user.OrgID, &user.ID, models.AuditActionOrgCreated, "organization", &user.OrgID, models.JSONMap{
 			"org_name": req.OrgName,
 			"email":    req.Email,
+		}, c.IP(), c.Get("User-Agent"))
+		logAuditEvent(db, user.OrgID, &user.ID, models.AuditActionTrialStarted, "organization", &user.OrgID, models.JSONMap{
+			"trial_end_at": trialEnd.Format(time.RFC3339),
 		}, c.IP(), c.Get("User-Agent"))
 
 		// Generate JWT token with owner role

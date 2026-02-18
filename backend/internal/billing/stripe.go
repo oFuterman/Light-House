@@ -205,6 +205,7 @@ func handleSubscriptionDeleted(db *gorm.DB, event stripe.Event) error {
         "stripe_subscription_status": &status,
         "current_period_end":         nil,
         "cancel_at_period_end":       false,
+        "is_trialing":                false,
     }).Error
 }
 
@@ -287,6 +288,17 @@ func updateOrgFromSubscription(db *gorm.DB, sub *stripe.Subscription) error {
     // Only update plan if subscription is active or trialing
     if sub.Status == stripe.SubscriptionStatusActive || sub.Status == stripe.SubscriptionStatusTrialing {
         updates["plan"] = plan
+        // Clear reverse trial — org has converted to a paid subscription
+        if org.IsTrialing {
+            updates["is_trialing"] = false
+            db.Create(&models.AuditLog{
+                OrgID:        org.ID,
+                Action:       models.AuditActionTrialConverted,
+                ResourceType: "organization",
+                ResourceID:   &org.ID,
+                Details:      models.JSONMap{"plan": string(plan)},
+            })
+        }
     }
     // If subscription is canceled at period end, keep current plan until then
     // If status is canceled, downgrade to free

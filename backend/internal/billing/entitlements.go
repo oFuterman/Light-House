@@ -25,11 +25,24 @@ type EntitlementResult struct {
 
 // EffectivePlan returns the plan to use for entitlement checks.
 // During an active trial, the org gets Team-level entitlements.
+// For paid plans with a canceled subscription status, defensively returns Free
+// (catches missed subscription.deleted webhooks).
+// past_due keeps full access — Stripe handles dunning and auto-cancels.
 func EffectivePlan(org *models.Organization) models.Plan {
+    // 1. Active reverse trial → Team
     if org.IsTrialing && org.TrialEndAt != nil && org.TrialEndAt.After(time.Now()) {
         return models.PlanTeam
     }
+    // 2. Invalid plan → Free
     if !org.Plan.IsValid() {
+        return models.PlanFree
+    }
+    // 3. Free plan → no subscription status to check
+    if org.Plan == models.PlanFree {
+        return models.PlanFree
+    }
+    // 4. Paid plan with canceled status → defensive downgrade
+    if org.StripeSubscriptionStatus != nil && *org.StripeSubscriptionStatus == "canceled" {
         return models.PlanFree
     }
     return org.Plan

@@ -59,6 +59,94 @@ func TestEffectivePlan_TrialingButNilEndAt(t *testing.T) {
 	}
 }
 
+// --- EffectivePlan: subscription status ---
+
+func TestEffectivePlan_PaidPlanCanceledStatus(t *testing.T) {
+	status := "canceled"
+	org := &models.Organization{
+		Plan:                     models.PlanTeam,
+		StripeSubscriptionStatus: &status,
+	}
+	if got := EffectivePlan(org); got != models.PlanFree {
+		t.Errorf("EffectivePlan(paid+canceled) = %q, want %q", got, models.PlanFree)
+	}
+}
+
+func TestEffectivePlan_PaidPlanPastDueStatus(t *testing.T) {
+	status := "past_due"
+	org := &models.Organization{
+		Plan:                     models.PlanTeam,
+		StripeSubscriptionStatus: &status,
+	}
+	// past_due keeps full access — Stripe handles dunning
+	if got := EffectivePlan(org); got != models.PlanTeam {
+		t.Errorf("EffectivePlan(paid+past_due) = %q, want %q", got, models.PlanTeam)
+	}
+}
+
+func TestEffectivePlan_PaidPlanActiveStatus(t *testing.T) {
+	status := "active"
+	org := &models.Organization{
+		Plan:                     models.PlanIndiePro,
+		StripeSubscriptionStatus: &status,
+	}
+	if got := EffectivePlan(org); got != models.PlanIndiePro {
+		t.Errorf("EffectivePlan(paid+active) = %q, want %q", got, models.PlanIndiePro)
+	}
+}
+
+func TestEffectivePlan_PaidPlanNilStatus(t *testing.T) {
+	// Manual plan assignment, no Stripe — keep stored plan
+	org := &models.Organization{
+		Plan:                     models.PlanTeam,
+		StripeSubscriptionStatus: nil,
+	}
+	if got := EffectivePlan(org); got != models.PlanTeam {
+		t.Errorf("EffectivePlan(paid+nil status) = %q, want %q", got, models.PlanTeam)
+	}
+}
+
+func TestEffectivePlan_FreePlanCanceledStatus(t *testing.T) {
+	status := "canceled"
+	org := &models.Organization{
+		Plan:                     models.PlanFree,
+		StripeSubscriptionStatus: &status,
+	}
+	if got := EffectivePlan(org); got != models.PlanFree {
+		t.Errorf("EffectivePlan(free+canceled) = %q, want %q", got, models.PlanFree)
+	}
+}
+
+func TestEffectivePlan_ActiveTrialOverridesCanceled(t *testing.T) {
+	future := time.Now().Add(24 * time.Hour)
+	status := "canceled"
+	org := &models.Organization{
+		Plan:                     models.PlanFree,
+		IsTrialing:               true,
+		TrialEndAt:               &future,
+		StripeSubscriptionStatus: &status,
+	}
+	// Active trial wins over canceled status
+	if got := EffectivePlan(org); got != models.PlanTeam {
+		t.Errorf("EffectivePlan(active trial+canceled) = %q, want %q", got, models.PlanTeam)
+	}
+}
+
+func TestEffectivePlan_ExpiredTrialWithCanceled(t *testing.T) {
+	past := time.Now().Add(-24 * time.Hour)
+	status := "canceled"
+	org := &models.Organization{
+		Plan:                     models.PlanTeam,
+		IsTrialing:               true,
+		TrialEndAt:               &past,
+		StripeSubscriptionStatus: &status,
+	}
+	// Expired trial + canceled status → Free
+	if got := EffectivePlan(org); got != models.PlanFree {
+		t.Errorf("EffectivePlan(expired trial+canceled) = %q, want %q", got, models.PlanFree)
+	}
+}
+
 // --- CanCreateCheck ---
 
 func TestCanCreateCheck_BelowLimit(t *testing.T) {
