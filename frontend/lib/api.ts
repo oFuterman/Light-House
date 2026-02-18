@@ -400,7 +400,7 @@ export const api = {
 
   // Slug suggestion and validation (public - used during signup)
   suggestSlug: (org_name: string) =>
-    fetch(`${API_URL}/auth/suggest-slug`, {
+    fetch(`/api/auth/suggest-slug`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ org_name }),
@@ -413,7 +413,7 @@ export const api = {
     }),
 
   checkSlug: (slug: string) =>
-    fetch(`${API_URL}/auth/check-slug`, {
+    fetch(`/api/auth/check-slug`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slug }),
@@ -426,7 +426,7 @@ export const api = {
     }),
 
   checkOrgName: (name: string) =>
-    fetch(`${API_URL}/auth/check-name`, {
+    fetch(`/api/auth/check-name`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
