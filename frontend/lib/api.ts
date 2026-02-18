@@ -1,3 +1,12 @@
+// Errors
+export class RateLimitError extends Error {
+  retryAfter: number;
+  constructor(retryAfter: number) {
+    super("Rate limited");
+    this.retryAfter = retryAfter;
+  }
+}
+
 // Types
 export type Role = "owner" | "admin" | "member";
 
@@ -429,11 +438,32 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     }).then(async (res) => {
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        throw new RateLimitError(data.retry_after || 60);
+      }
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
         throw new Error(error.error || "Failed to check name");
       }
       return res.json() as Promise<{ name: string; available: boolean }>;
+    }),
+
+  checkEmail: (email: string) =>
+    fetch(`/api/auth/check-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    }).then(async (res) => {
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        throw new RateLimitError(data.retry_after || 60);
+      }
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || "Failed to check email");
+      }
+      return res.json() as Promise<{ email: string; valid: boolean; available: boolean; error?: string }>;
     }),
 
   getMe: () => request<User>("/me"),

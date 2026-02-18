@@ -163,13 +163,27 @@ func RateLimitByAPIKey(max int, window time.Duration) fiber.Handler {
 	})
 }
 
-// RateLimitAuth creates a stricter rate limiter for auth endpoints
+// RateLimitAuth creates a stricter rate limiter for credential endpoints (login/signup)
 func RateLimitAuth() fiber.Handler {
 	return RateLimit(RateLimitConfig{
-		Max:    10,              // 10 attempts
+		Max:    10,               // 10 attempts
 		Window: 15 * time.Minute, // per 15 minutes
 		KeyFunc: func(c *fiber.Ctx) string {
 			return "auth:" + c.IP()
+		},
+	})
+}
+
+// RateLimitValidation creates a rate limiter for signup form validation endpoints
+// (check-name, check-slug, suggest-slug, check-email).
+// More generous than auth to allow real-time form feedback, but still capped
+// to limit enumeration (30 emails/min per IP = ~1800/hr max from single IP).
+func RateLimitValidation() fiber.Handler {
+	return RateLimit(RateLimitConfig{
+		Max:    30,         // 30 checks
+		Window: time.Minute, // per minute
+		KeyFunc: func(c *fiber.Ctx) string {
+			return "validate:" + c.IP()
 		},
 	})
 }

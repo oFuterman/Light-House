@@ -10,9 +10,13 @@ export async function POST(request: NextRequest) {
   try {
     const { invite_token, password } = await request.json();
 
+    const xff = request.headers.get("x-forwarded-for");
     const response = await fetch(`${API_URL}/invites/${invite_token}/accept`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(xff && { "X-Forwarded-For": xff }),
+      },
       body: JSON.stringify({ password }),
     });
 

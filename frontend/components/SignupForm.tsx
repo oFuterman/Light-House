@@ -4,9 +4,51 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth";
-import { api, SlugSuggestion, SlugCheckResponse } from "@/lib/api";
+import { api, RateLimitError, SlugSuggestion, SlugCheckResponse } from "@/lib/api";
 
 type Step = "account" | "slug";
+
+type ValidationStatus = {
+    state: "idle" | "checking" | "valid" | "invalid";
+    message?: string;
+};
+
+function ValidationIcon({ status }: { status: ValidationStatus }) {
+    if (status.state === "idle") return null;
+
+    if (status.state === "checking") {
+        return (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <svg className="w-4 h-4 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+            </div>
+        );
+    }
+
+    const isValid = status.state === "valid";
+
+    return (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 group/icon">
+            {isValid ? (
+                <svg className="w-4 h-4 text-green-500 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+            ) : (
+                <svg className="w-4 h-4 text-red-500 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+            )}
+            {status.message && (
+                <div className="absolute right-0 bottom-full mb-2 px-2.5 py-1.5 text-xs rounded-md shadow-lg whitespace-nowrap opacity-0 pointer-events-none group-hover/icon:opacity-100 group-hover/icon:pointer-events-auto transition-opacity bg-gray-900 text-white dark:bg-gray-200 dark:text-gray-900">
+                    {status.message}
+                    <div className="absolute right-2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-200" />
+                </div>
+            )}
+        </div>
+    );
+}
 
 export function SignupForm() {
     const router = useRouter();
@@ -20,9 +62,9 @@ export function SignupForm() {
     const [selectedSlug, setSelectedSlug] = useState("");
     const [customSlug, setCustomSlug] = useState("");
 
-    // Org name check state
-    const [nameAvailable, setNameAvailable] = useState<boolean | null>(null);
-    const [isCheckingName, setIsCheckingName] = useState(false);
+    // Validation state
+    const [nameStatus, setNameStatus] = useState<ValidationStatus>({ state: "idle" });
+    const [emailStatus, setEmailStatus] = useState<ValidationStatus>({ state: "idle" });
 
     // Slug suggestions state
     const [primarySlug, setPrimarySlug] = useState<SlugSuggestion | null>(null);
@@ -61,24 +103,67 @@ export function SignupForm() {
   useEffect(() => {
     const trimmed = orgName.trim();
     if (trimmed.length < 2) {
-      setNameAvailable(null);
+      setNameStatus({ state: "idle" });
       return;
     }
 
-    setIsCheckingName(true);
+    setNameStatus({ state: "checking" });
     const timer = setTimeout(async () => {
       try {
         const result = await api.checkOrgName(trimmed);
-        setNameAvailable(result.available);
-      } catch {
-        setNameAvailable(null);
-      } finally {
-        setIsCheckingName(false);
+        setNameStatus(result.available
+          ? { state: "valid", message: "Name is available" }
+          : { state: "invalid", message: "Name already taken" }
+        );
+      } catch (err) {
+        if (err instanceof RateLimitError) {
+          setNameStatus({ state: "invalid", message: `Too many requests. Try again in ${err.retryAfter}s` });
+        } else {
+          setNameStatus({ state: "idle" });
+        }
       }
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [orgName]);
+
+  // Debounced email check
+  useEffect(() => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setEmailStatus({ state: "idle" });
+      return;
+    }
+
+    // Basic client-side format check before hitting server
+    const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    if (!looksLikeEmail) {
+      setEmailStatus({ state: "invalid", message: "Invalid email format" });
+      return;
+    }
+
+    setEmailStatus({ state: "checking" });
+    const timer = setTimeout(async () => {
+      try {
+        const result = await api.checkEmail(trimmed);
+        if (!result.valid) {
+          setEmailStatus({ state: "invalid", message: result.error || "Invalid email format" });
+        } else if (!result.available) {
+          setEmailStatus({ state: "invalid", message: result.error || "Email already registered" });
+        } else {
+          setEmailStatus({ state: "valid", message: "Email is available" });
+        }
+      } catch (err) {
+        if (err instanceof RateLimitError) {
+          setEmailStatus({ state: "invalid", message: `Too many requests. Try again in ${err.retryAfter}s` });
+        } else {
+          setEmailStatus({ state: "idle" });
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [email]);
 
   // Fetch slug suggestions when moving to step 2
   const fetchSlugSuggestions = useCallback(async () => {
@@ -90,7 +175,6 @@ export function SignupForm() {
       setPrimarySlug(response.primary);
       setAlternatives(response.alternatives);
 
-      // Auto-select the primary slug if available, otherwise first available alternative
       if (response.primary.available) {
         setSelectedSlug(response.primary.slug);
       } else {
@@ -98,7 +182,6 @@ export function SignupForm() {
         if (firstAvailable) {
           setSelectedSlug(firstAvailable.slug);
         } else {
-          // No available suggestions - user must enter custom
           setSelectedSlug("custom");
         }
       }
@@ -110,12 +193,19 @@ export function SignupForm() {
     }
   }, [orgName]);
 
+  // Continue button disabled when either field is invalid or still checking
+  const canContinue =
+    orgName.trim().length >= 2 &&
+    email.trim().length > 0 &&
+    password.length >= 8 &&
+    nameStatus.state === "valid" &&
+    emailStatus.state === "valid";
+
   // Handle step 1 submission (account details)
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Basic validation
     if (!email || !password || !orgName) {
       setError("All fields are required");
       return;
@@ -126,12 +216,16 @@ export function SignupForm() {
       return;
     }
 
-    if (nameAvailable === false) {
-      setError("An organization with this name already exists");
+    if (nameStatus.state !== "valid") {
+      setError("Please use an available organization name");
       return;
     }
 
-    // Move to slug selection step
+    if (emailStatus.state !== "valid") {
+      setError("Please use a valid, available email address");
+      return;
+    }
+
     setStep("slug");
     await fetchSlugSuggestions();
   };
@@ -148,7 +242,6 @@ export function SignupForm() {
       return;
     }
 
-    // If using custom slug, validate it's available
     if (selectedSlug === "custom") {
       if (!slugCheckResult?.valid) {
         setError(slugCheckResult?.error || "Invalid URL format");
@@ -229,40 +322,35 @@ export function SignupForm() {
                         <label htmlFor="orgName" className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-200">
                             Organization Name
                         </label>
-                        <input
-                            id="orgName"
-                            type="text"
-                            value={orgName}
-                            onChange={(e) => setOrgName(e.target.value)}
-                            placeholder="Acme Corp"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
-                            required
-                        />
-                        {orgName.trim().length >= 2 && (
-                            <div className="mt-1 text-sm">
-                                {isCheckingName ? (
-                                    <span className="text-gray-500 dark:text-gray-400">Checking availability...</span>
-                                ) : nameAvailable === true ? (
-                                    <span className="text-green-600 dark:text-green-400">Name is available</span>
-                                ) : nameAvailable === false ? (
-                                    <span className="text-red-600 dark:text-red-400">Name already taken</span>
-                                ) : null}
-                            </div>
-                        )}
+                        <div className="relative">
+                            <input
+                                id="orgName"
+                                type="text"
+                                value={orgName}
+                                onChange={(e) => setOrgName(e.target.value)}
+                                placeholder="Acme Corp"
+                                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
+                                required
+                            />
+                            <ValidationIcon status={nameStatus} />
+                        </div>
                     </div>
 
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-200">
                             Email
                         </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-gray-500"
+                                required
+                            />
+                            <ValidationIcon status={emailStatus} />
+                        </div>
                     </div>
 
                     <div>
@@ -283,7 +371,8 @@ export function SignupForm() {
 
                     <button
                         type="submit"
-                        className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+                        disabled={!canContinue}
+                        className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
                     >
                         Continue
                     </button>

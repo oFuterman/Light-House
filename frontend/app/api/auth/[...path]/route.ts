@@ -11,9 +11,13 @@ export async function POST(
     const subpath = path.join("/");
     const body = await request.json();
 
+    const xff = request.headers.get("x-forwarded-for");
     const response = await fetch(`${API_URL}/auth/${subpath}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(xff && { "X-Forwarded-For": xff }),
+      },
       body: JSON.stringify(body),
     });
 

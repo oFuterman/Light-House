@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"net/mail"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/oFuterman/light-house/internal/models"
 	"github.com/oFuterman/light-house/internal/utils"
 	"gorm.io/gorm"
 )
@@ -87,6 +89,48 @@ func CheckOrgName(db *gorm.DB) fiber.Handler {
 			"name":      name,
 			"available": available,
 		})
+	}
+}
+
+// CheckEmail validates email format and checks availability
+// POST /api/v1/auth/check-email
+func CheckEmail(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req struct {
+			Email string `json:"email"`
+		}
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid request body",
+			})
+		}
+
+		email := strings.TrimSpace(strings.ToLower(req.Email))
+
+		// Validate format
+		if _, err := mail.ParseAddress(email); err != nil {
+			return c.JSON(fiber.Map{
+				"email":     email,
+				"valid":     false,
+				"available": false,
+				"error":     "Invalid email format",
+			})
+		}
+
+		// Check availability
+		var count int64
+		db.Model(&models.User{}).Where("email = ?", email).Count(&count)
+		available := count == 0
+
+		resp := fiber.Map{
+			"email":     email,
+			"valid":     true,
+			"available": available,
+		}
+		if !available {
+			resp["error"] = "Email already registered"
+		}
+		return c.JSON(resp)
 	}
 }
 

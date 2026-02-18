@@ -8,9 +8,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward the signup request to the backend
+    const xff = request.headers.get("x-forwarded-for");
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(xff && { "X-Forwarded-For": xff }),
+      },
       body: JSON.stringify(body),
     });
 

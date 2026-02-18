@@ -36,16 +36,19 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	// API v1
 	v1 := app.Group("/api/v1")
 
-	// Auth routes (public) with rate limiting
+	// Auth credential routes (login/signup) — strict rate limit: 10 per 15min per IP
 	auth := v1.Group("/auth", middleware.RateLimitAuth())
 	auth.Post("/signup", handlers.Signup(db))
 	auth.Post("/login", handlers.Login(db))
 	auth.Post("/logout", handlers.Logout)
 
-	// Slug suggestion and validation (public - used during signup)
-	auth.Post("/suggest-slug", handlers.SuggestSlug(db))
-	auth.Post("/check-slug", handlers.CheckSlug(db))
-	auth.Post("/check-name", handlers.CheckOrgName(db))
+	// Signup form validation routes — separate, more generous limit: 30 per min per IP
+	// Isolated bucket ("validate:" prefix) so typing in form fields never consumes login attempts
+	validate := v1.Group("/auth", middleware.RateLimitValidation())
+	validate.Post("/suggest-slug", handlers.SuggestSlug(db))
+	validate.Post("/check-slug", handlers.CheckSlug(db))
+	validate.Post("/check-name", handlers.CheckOrgName(db))
+	validate.Post("/check-email", handlers.CheckEmail(db))
 
 	// Invite routes (public - for accepting invites)
 	v1.Get("/invites/:token", handlers.GetInviteInfo(db))

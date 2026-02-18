@@ -20,6 +20,8 @@ async function proxy(
     const contentType = request.headers.get("content-type");
     if (contentType) headers["Content-Type"] = contentType;
     if (token) headers["Authorization"] = `Bearer ${token}`;
+    const xff = request.headers.get("x-forwarded-for");
+    if (xff) headers["X-Forwarded-For"] = xff;
 
     const body =
       request.method !== "GET" && request.method !== "HEAD"

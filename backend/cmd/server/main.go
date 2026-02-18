@@ -43,6 +43,7 @@ func main() {
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
+		ProxyHeader:  "X-Forwarded-For",
 		ErrorHandler: customErrorHandler,
 	})
 
