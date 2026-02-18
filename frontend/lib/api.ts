@@ -1,5 +1,3 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
-
 // Types
 export type Role = "owner" | "admin" | "member";
 
@@ -351,7 +349,7 @@ async function request<T>(
     ...options.headers,
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`/api/v1${endpoint}`, {
     ...options,
     headers,
     credentials: "include", // Send cookies with requests
@@ -582,9 +580,9 @@ export const api = {
       method: "POST",
     }),
 
-  // Public invite endpoints (no auth required)
+  // Public invite endpoints (no auth required) — routed through proxy
   getInviteInfo: (token: string) =>
-    fetch(`${API_URL}/invites/${token}`).then(async (res) => {
+    fetch(`/api/v1/invites/${token}`).then(async (res) => {
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
         throw new Error(error.error || "Failed to get invite info");
@@ -593,17 +591,16 @@ export const api = {
     }),
 
   acceptInvite: (token: string, password: string) =>
-    fetch(`${API_URL}/invites/${token}/accept`, {
+    fetch(`/api/auth/accept-invite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-      credentials: "include",
+      body: JSON.stringify({ invite_token: token, password }),
     }).then(async (res) => {
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
         throw new Error(error.error || "Failed to accept invite");
       }
-      return res.json() as Promise<{ token: string; user: User }>;
+      return res.json() as Promise<{ user: User }>;
     }),
 
   // Audit Logs
