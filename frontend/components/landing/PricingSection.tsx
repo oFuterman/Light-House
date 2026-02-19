@@ -84,12 +84,12 @@ export function PricingSection() {
                             <div
                                 className={`rounded-xl border p-6 flex flex-col h-full ${
                                     plan.highlighted
-                                        ? "border-gray-900 dark:border-white relative"
+                                        ? "border-beacon-400 dark:border-beacon-400 relative"
                                         : "border-gray-200 dark:border-gray-800"
                                 } bg-white dark:bg-gray-800/50`}
                             >
                                 {plan.highlighted && (
-                                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full">
+                                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-medium bg-beacon-400 text-gray-900 rounded-full">
                                         Most Popular
                                     </span>
                                 )}
@@ -113,7 +113,7 @@ export function PricingSection() {
                                     href="/signup"
                                     className={`block text-center py-2.5 rounded-lg text-sm font-medium transition-colors ${
                                         plan.highlighted
-                                            ? "bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+                                            ? "bg-beacon-400 text-gray-900 hover:bg-beacon-300 dark:bg-beacon-400 dark:text-gray-900 dark:hover:bg-beacon-300"
                                             : "border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                                     }`}
                                 >

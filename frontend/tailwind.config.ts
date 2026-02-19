@@ -34,6 +34,17 @@ const config: Config = {
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
       },
+      colors: {
+        beacon: {
+          50: "#FFFEF5",
+          100: "#FFFCE0",
+          200: "#FFF599",
+          300: "#FFED70",
+          400: "#FFE566",
+          500: "#F5D245",
+          600: "#D4AD1E",
+        },
+      },
       animation: {
         "fade-in-up": "fade-in-up 0.6s ease-out forwards",
         "fade-in": "fade-in 0.6s ease-out forwards",

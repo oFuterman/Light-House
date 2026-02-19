@@ -6,9 +6,9 @@ import { StatusTicker } from "./StatusTicker";
 export function HeroSection() {
     return (
         <section className="relative min-h-screen flex items-center justify-center bg-grid overflow-hidden">
-            {/* Radial glow */}
+            {/* Beacon glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-[600px] h-[600px] bg-gray-200/50 dark:bg-gray-700/20 rounded-full blur-3xl" />
+                <div className="w-[500px] h-[500px] bg-beacon-300/15 dark:bg-beacon-400/10 rounded-full blur-3xl" />
             </div>
 
             <div className="relative z-10 max-w-4xl mx-auto px-4 py-32 text-center">
@@ -17,7 +17,7 @@ export function HeroSection() {
                     className="inline-block mb-6 animate-fade-in-up"
                     style={{ animationDelay: "0.1s", animationFillMode: "backwards" }}
                 >
-                    <span className="px-4 py-1.5 text-sm font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                    <span className="px-4 py-1.5 text-sm font-medium rounded-full border border-beacon-200 dark:border-beacon-500/30 bg-beacon-50 dark:bg-beacon-400/10 text-beacon-600 dark:text-beacon-300">
                         14-day free trial — no card required
                     </span>
                 </div>
@@ -27,8 +27,8 @@ export function HeroSection() {
                     className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 animate-fade-in-up"
                     style={{ animationDelay: "0.2s", animationFillMode: "backwards" }}
                 >
-                    Know when it breaks.{" "}
-                    <span className="text-gray-400 dark:text-gray-500">Before your users do.</span>
+                    Know when it breaks{" "}
+                    <span className="text-gray-400 dark:text-gray-500">Before your users do</span>
                 </h1>
 
                 {/* Subheadline */}

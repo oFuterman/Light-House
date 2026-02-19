@@ -33,12 +33,12 @@ export function HowItWorks() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
                     {/* Connecting line (desktop only) */}
-                    <div className="hidden md:block absolute top-5 left-[20%] right-[20%] h-px border-t-2 border-dashed border-gray-300 dark:border-gray-600" />
+                    <div className="hidden md:block absolute top-5 left-[20%] right-[20%] h-px border-t-2 border-dashed border-beacon-200 dark:border-beacon-500/30" />
 
                     {STEPS.map((step, i) => (
                         <AnimateOnScroll key={step.number} delay={i * 150}>
                             <div className="text-center relative">
-                                <div className="w-10 h-10 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center font-bold text-sm mx-auto mb-4 relative z-10">
+                                <div className="w-10 h-10 rounded-full bg-beacon-400 text-gray-900 flex items-center justify-center font-bold text-sm mx-auto mb-4 relative z-10">
                                     {step.number}
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
