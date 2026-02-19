@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/contexts/auth";
 import { useTheme } from "@/contexts/theme";
 
@@ -30,6 +31,7 @@ export function DashboardNav() {
     const pathname = usePathname();
     const params = useParams();
     const { user, logout } = useAuth();
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     // F4 mitigation: prefer params, fallback to auth context
     const slug = (params?.slug as string) || user?.org_slug || "";
@@ -57,7 +59,7 @@ export function DashboardNav() {
                         <Link href={`${basePath}/dashboard`} className="font-semibold text-gray-900 dark:text-white">
                             Light House
                         </Link>
-                        <div className="flex gap-4">
+                        <div className="hidden md:flex gap-4">
                             {navItems.map((item) => (
                                 <Link
                                     key={item.href}
@@ -73,7 +75,8 @@ export function DashboardNav() {
                             ))}
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    {/* Desktop right side */}
+                    <div className="hidden md:flex items-center gap-4">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</span>
                         <Link
                             href={`${basePath}/settings`}
@@ -93,8 +96,61 @@ export function DashboardNav() {
                             Logout
                         </button>
                     </div>
+                    {/* Mobile hamburger */}
+                    <button
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        className="md:hidden flex items-center p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                        {mobileOpen ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        )}
+                    </button>
                 </div>
             </div>
+            {/* Mobile menu */}
+            {mobileOpen && (
+                <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 space-y-1">
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMobileOpen(false)}
+                            className={`block py-2 text-sm rounded-lg px-3 ${
+                                isActive(item.href)
+                                    ? "text-gray-900 font-medium bg-gray-50 dark:text-white dark:bg-gray-700"
+                                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                            }`}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
+                    <Link
+                        href={`${basePath}/settings`}
+                        onClick={() => setMobileOpen(false)}
+                        className="block py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700 rounded-lg px-3"
+                    >
+                        Settings
+                    </Link>
+                    <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-100 dark:border-gray-700 px-3">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 truncate mr-3">{user?.email}</span>
+                        <div className="flex items-center gap-2">
+                            <ThemeToggle />
+                            <button
+                                onClick={() => { setMobileOpen(false); logout(); }}
+                                className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }
