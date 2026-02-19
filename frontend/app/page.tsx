@@ -1,28 +1,23 @@
-import Link from "next/link";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { DashboardPreview } from "@/components/landing/DashboardPreview";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { CTASection } from "@/components/landing/CTASection";
+import { Footer } from "@/components/landing/Footer";
 
 export default function Home() {
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-8">
-      <div className="text-center max-w-2xl">
-        <h1 className="text-4xl font-bold mb-4">Light House</h1>
-        <p className="text-gray-600 mb-8">
-          Lightweight uptime monitoring tool.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link
-            href="/login"
-            className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
-          >
-            Login
-          </Link>
-          <Link
-            href="/signup"
-            className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-          >
-            Sign Up
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
+    return (
+        <main className="min-h-screen">
+            <LandingNav />
+            <HeroSection />
+            <FeaturesGrid />
+            <HowItWorks />
+            <DashboardPreview />
+            <PricingSection />
+            <CTASection />
+            <Footer />
+        </main>
+    );
 }
