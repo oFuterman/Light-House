@@ -136,13 +136,9 @@ function UsageMeter({
 function PlanCard({
   plan,
   billing,
-  onUpgrade,
-  isLoading,
 }: {
   plan: PlanInfo;
   billing: BillingResponse;
-  onUpgrade: (plan: Plan) => void;
-  isLoading: boolean;
 }) {
   const isCurrent = plan.is_current;
   const isUpgrade = plan.price_cents > billing.plan_config.MonthlyPriceCents;
@@ -175,11 +171,10 @@ function PlanCard({
       </ul>
       {!isCurrent && isUpgrade && (
         <button
-          onClick={() => onUpgrade(plan.id as Plan)}
-          disabled={isLoading}
-          className="w-full py-2 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
+          disabled
+          className="w-full py-2 px-4 rounded-lg font-medium bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
         >
-          {isLoading ? "Loading..." : "Upgrade"}
+          Coming Soon
         </button>
       )}
     </div>
@@ -267,7 +262,7 @@ export function BillingTab() {
   const [billing, setBilling] = useState<BillingResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  // const [upgradeLoading, setUpgradeLoading] = useState(false); // Re-enable when payments are live
 
   // Checkout redirect banners
   const checkoutParam = searchParams.get("checkout");
@@ -299,13 +294,9 @@ export function BillingTab() {
     }
   }, [checkoutParam, fetchBilling]);
 
-  const handleUpgrade = async (_plan: Plan) => {
-    setError("Payments are not yet available. Paid plans are coming soon!");
-  };
-
-  const handleManageBilling = async () => {
-    setError("Billing management is not yet available. Coming soon!");
-  };
+  // Re-enable when payments are live:
+  // const handleUpgrade = async (plan: Plan) => { ... };
+  // const handleManageBilling = async () => { ... };
 
   if (isLoading) {
     return (
@@ -356,13 +347,9 @@ export function BillingTab() {
         <DismissibleBanner type="urgent" title="Payment issue">
           <p>We were unable to process your last payment. Your plan remains active during the grace period, but may be downgraded if the issue isn&apos;t resolved.</p>
           {isOwner && (
-            <button
-              onClick={handleManageBilling}
-              disabled={upgradeLoading}
-              className="mt-2 px-4 py-1.5 text-sm font-medium rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              Update Payment Method
-            </button>
+            <span className="inline-block mt-2 px-4 py-1.5 text-sm font-medium rounded bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400">
+              Billing coming soon
+            </span>
           )}
           {!isOwner && <p className="mt-1 text-sm opacity-75">Ask your organization owner to update the payment method.</p>}
         </DismissibleBanner>
@@ -377,13 +364,9 @@ export function BillingTab() {
             <p>You&apos;re on a trial of the {config.Name} plan. After the trial, your organization will be downgraded to the Free plan unless you subscribe.</p>
           )}
           {isOwner && billing.plan !== "free" && (
-            <button
-              onClick={handleManageBilling}
-              disabled={upgradeLoading}
-              className="mt-2 px-4 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              Subscribe Now
-            </button>
+            <span className="inline-block mt-2 px-4 py-1.5 text-sm font-medium rounded bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400">
+              Subscriptions coming soon
+            </span>
           )}
         </DismissibleBanner>
       )}
@@ -432,13 +415,9 @@ export function BillingTab() {
 
           {/* Manage Billing / Upgrade CTA */}
           {isOwner && billing.plan !== "free" && (
-            <button
-              onClick={handleManageBilling}
-              disabled={upgradeLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-            >
-              Manage Billing
-            </button>
+            <span className="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-500 dark:border-gray-600">
+              Billing coming soon
+            </span>
           )}
         </div>
 
@@ -457,7 +436,7 @@ export function BillingTab() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-white">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {billing.available_plans.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} billing={billing} onUpgrade={handleUpgrade} isLoading={upgradeLoading} />
+              <PlanCard key={plan.id} plan={plan} billing={billing} />
             ))}
           </div>
           <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
