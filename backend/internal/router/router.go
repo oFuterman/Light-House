@@ -36,19 +36,20 @@ func Setup(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 	// API v1
 	v1 := app.Group("/api/v1")
 
-	// Auth credential routes (login/signup) — strict rate limit: 10 per 15min per IP
-	auth := v1.Group("/auth", middleware.RateLimitAuth())
-	auth.Post("/signup", handlers.Signup(db))
-	auth.Post("/login", handlers.Login(db))
+	// Auth routes — single group, per-route rate limits to avoid prefix bleed-through
+	auth := v1.Group("/auth")
+
+	// Credential routes — strict: 10 per 15min per IP
+	auth.Post("/signup", middleware.RateLimitAuth(), handlers.Signup(db))
+	auth.Post("/login", middleware.RateLimitAuth(), handlers.Login(db))
 	auth.Post("/logout", handlers.Logout)
 
-	// Signup form validation routes — separate, more generous limit: 30 per min per IP
+	// Signup form validation routes — generous: 30 per 2min per IP
 	// Isolated bucket ("validate:" prefix) so typing in form fields never consumes login attempts
-	validate := v1.Group("/auth", middleware.RateLimitValidation())
-	validate.Post("/suggest-slug", handlers.SuggestSlug(db))
-	validate.Post("/check-slug", handlers.CheckSlug(db))
-	validate.Post("/check-name", handlers.CheckOrgName(db))
-	validate.Post("/check-email", handlers.CheckEmail(db))
+	auth.Post("/suggest-slug", middleware.RateLimitValidation(), handlers.SuggestSlug(db))
+	auth.Post("/check-slug", middleware.RateLimitValidation(), handlers.CheckSlug(db))
+	auth.Post("/check-name", middleware.RateLimitValidation(), handlers.CheckOrgName(db))
+	auth.Post("/check-email", middleware.RateLimitValidation(), handlers.CheckEmail(db))
 
 	// Invite routes (public - for accepting invites)
 	v1.Get("/invites/:token", handlers.GetInviteInfo(db))

@@ -180,8 +180,8 @@ func RateLimitAuth() fiber.Handler {
 // to limit enumeration (30 emails/min per IP = ~1800/hr max from single IP).
 func RateLimitValidation() fiber.Handler {
 	return RateLimit(RateLimitConfig{
-		Max:    30,         // 30 checks
-		Window: time.Minute, // per minute
+		Max:    30,             // 30 checks
+		Window: 2 * time.Minute, // per 2 minutes
 		KeyFunc: func(c *fiber.Ctx) string {
 			return "validate:" + c.IP()
 		},
