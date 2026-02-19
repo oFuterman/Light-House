@@ -138,6 +138,10 @@ type CreateCheckoutRequest struct {
 // POST /api/v1/billing/checkout
 func CreateCheckout(db *gorm.DB) fiber.Handler {
     return func(c *fiber.Ctx) error {
+        // Payments disabled until ready for production
+        return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+            "error": "Payments are not yet available. Paid plans are coming soon!",
+        })
         orgID := c.Locals("orgID").(uint)
         userID := c.Locals("userID").(uint)
         // Load org
@@ -185,6 +189,10 @@ func CreateCheckout(db *gorm.DB) fiber.Handler {
 // POST /api/v1/billing/portal
 func CreatePortal(db *gorm.DB) fiber.Handler {
     return func(c *fiber.Ctx) error {
+        // Billing portal disabled until ready for production
+        return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+            "error": "Billing management is not yet available. Coming soon!",
+        })
         orgID := c.Locals("orgID").(uint)
         // Load org
         var org models.Organization
