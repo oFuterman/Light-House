@@ -299,26 +299,12 @@ export function BillingTab() {
     }
   }, [checkoutParam, fetchBilling]);
 
-  const handleUpgrade = async (plan: Plan) => {
-    setUpgradeLoading(true);
-    try {
-      const { checkout_url } = await api.createCheckoutSession(plan);
-      window.location.href = checkout_url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create checkout session");
-      setUpgradeLoading(false);
-    }
+  const handleUpgrade = async (_plan: Plan) => {
+    setError("Payments are not yet available. Paid plans are coming soon!");
   };
 
   const handleManageBilling = async () => {
-    setUpgradeLoading(true);
-    try {
-      const { portal_url } = await api.createPortalSession();
-      window.location.href = portal_url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to open billing portal");
-      setUpgradeLoading(false);
-    }
+    setError("Billing management is not yet available. Coming soon!");
   };
 
   if (isLoading) {
